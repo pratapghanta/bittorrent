@@ -8,6 +8,9 @@ Build instructions:
 2.	Building the new executable
 	gmake all
 
+3.	Building and running tests
+	gmake tests
+
 Usage:
 ------
 The binary is executed as follows.
