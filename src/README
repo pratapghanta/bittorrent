@@ -1,15 +1,21 @@
 
+Build dependencies:
+___________________
+1. OpenSSL
+
+
 Build instructions:
 -------------------
 
 1.	Cleaning the existing intermediate files
-	gmake clean
+	MAKE clean
 
 2.	Building the new executable
-	gmake all
+	MAKE all
 
 3.	Building and running tests
-	gmake tests
+	MAKE tests
+
 
 Usage:
 ------

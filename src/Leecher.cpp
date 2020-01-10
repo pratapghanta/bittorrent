@@ -41,7 +41,7 @@ namespace {
 			if (hash[i] == '\0')
 				hash[i] = '_';
 
-		return torrent.getPieceHashes()[pieceIndex].compare(reinterpret_cast<char*>(hash));
+		return torrent.GetPieceHashes()[pieceIndex].compare(reinterpret_cast<char*>(hash));
 	}
 
 	BT::Peer_t getClientDetails(int const sockfd) {
@@ -74,17 +74,17 @@ namespace {
 		if (connect(sockfd, (sockaddr*)&serv_addr, sizeof(serv_addr)) != 0)
 			return BT::Peer_t("", 0);
 
-		return std::move(getClientDetails(sockfd));
+		return getClientDetails(sockfd);
 	}
 }
 
 BT::Leecher_t::Leecher_t(BT::Torrent_t const& t, Peer_t& s)
-	: torrent(t), seeder(std::move(s)), leecher(std::move(establishConnectionToSeeder(s.getIp(), s.getPort()))) {
+	: torrent(t), seeder(std::move(s)), leecher(establishConnectionToSeeder(s.getIp(), s.getPort())) {
 }
 
 bool const BT::Leecher_t::communicatePortocolMessages() {
 	seeder.send(BT::Defaults::handshakeMessage.c_str(), BT::Defaults::handshakeMessage.length());
-	seeder.send(torrent.getInfoHash().c_str(), BT::Defaults::Sha1MdSize - 1);
+	seeder.send(torrent.GetInfoHash().c_str(), BT::Defaults::Sha1MdSize - 1);
 	seeder.send(leecher.getId().c_str(), BT::Defaults::Sha1MdSize - 1);
 
 	char buffer[BT::Defaults::MaxBufferSize] = "";
@@ -95,7 +95,7 @@ bool const BT::Leecher_t::communicatePortocolMessages() {
 	auto inSameSwarm = [&]() {
 		memset(buffer, 0, BT::Defaults::MaxBufferSize);
 		seeder.receive(buffer, BT::Defaults::Sha1MdSize - 1);
-		return torrent.getInfoHash().compare(buffer) == 0;
+		return torrent.GetInfoHash().compare(buffer) == 0;
 	};
 
 	auto expectedSeeder = [&]() {
@@ -120,11 +120,11 @@ bool const BT::Leecher_t::getPieceFromSeeder(long const interestedPiece) {
 	if (msg.isChoked()) return false;
 
 	int const begin = 0;
-	auto requestDetails = BT::Request_t(interestedPiece, begin, torrent.getPieceLength());
+	auto requestDetails = BT::Request_t(interestedPiece, begin, torrent.GetPieceLength());
 	seeder.sendMessage(Message_t::getRequestMessage(requestDetails));
 
-	auto isEndOfPiece = [&](long const currPos) { return currPos >= torrent.getPieceLength(); };
-	auto isEndOfDataFile = [&](long const currPos) { return (interestedPiece * torrent.getPieceLength()) + begin + currPos >= torrent.getFileLength(); };
+	auto isEndOfPiece = [&](long const currPos) { return currPos >= torrent.GetPieceLength(); };
+	auto isEndOfDataFile = [&](long const currPos) { return (interestedPiece * torrent.GetPieceLength()) + begin + currPos >= torrent.GetFileLength(); };
 
 	std::string fileContents;
 	while (!isEndOfPiece(fileContents.length()) && !isEndOfDataFile(fileContents.length())) {
@@ -139,7 +139,7 @@ bool const BT::Leecher_t::getPieceFromSeeder(long const interestedPiece) {
 		fileContents += std::string(dataBuf);
 	}
 
-	BT::BinaryFileHandler_t fileHndl(getSaveFilenameForPiece(torrent.getFileName(), interestedPiece));
+	BT::BinaryFileHandler_t fileHndl(getSaveFilenameForPiece(torrent.GetFileName(), interestedPiece));
 	fileHndl.put(fileContents);
 
 	return isTransferSuccessful(torrent, interestedPiece, fileContents);

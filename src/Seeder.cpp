@@ -32,7 +32,7 @@ namespace {
 		server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
 		server_addr.sin_port = htons(port);
 
-		if (bind(sockfd, (sockaddr *)& server_addr, sizeof(server_addr)) != 0)
+		if (::bind(sockfd, (sockaddr *)& server_addr, sizeof(server_addr)) != 0)
 			throwErrorAndExit("Socket binding failed.");
 
 		return sockfd;

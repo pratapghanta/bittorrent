@@ -1,6 +1,7 @@
 #ifndef TORRENT_PARSER_HPP
 #define TORRENT_PARSER_HPP
 
+#include "StatusCode.hpp"
 #include "Metainfo.hpp"
 
 namespace BT {
@@ -12,9 +13,10 @@ namespace BT {
 	/* Room for improving the algorithm is created by programming to */
 	/* interface so that algorithm can be changed with less ripples. */
 
-	class TorrentParser {
+	class TorrentParser_t {
 	public:
-		virtual Metainfo const doParse(std::string const& fileName) const = 0;
+		virtual STATUSCODE Parse(/* IN */  std::string const& fileName,
+		                         /* OUT */ Metainfo_t& rInfo) const = 0;
 	};
 }
-#endif
+#endif // #ifndef TORRENT_PARSER_HPP

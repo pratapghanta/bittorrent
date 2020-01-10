@@ -1,4 +1,18 @@
 
+# Configure path for OpenSSL include and library
+UNAME_S         = $(shell uname -s)
+ifeq ($(OS),Windows_NT)
+	OPENSSL_INCLUDE =
+
+else ifeq ($(UNAME_S), Linux)
+	OPENSSL_INCLUDE = /usr/local/include/
+	OPENSSL_LIBDIR  = /usr/local/opt/openssl/lib/
+
+else ifeq ($(UNAME_S), Darwin)
+	OPENSSL_INCLUDE = /usr/local/opt/openssl/include/
+	OPENSSL_LIBDIR  = /usr/local/opt/openssl/lib/
+endif
+
 CC = g++
 
 PROJECT_NAME    = bittorrent
@@ -13,8 +27,8 @@ SRC_INCLUDEDIR  = $(PROJECT_DIR)/include
 SRC_LIB         = $(SRC_LIBDIR)/lib$(PROJECT_NAME).a
 SRC_RUN         = $(SRC_BINDIR)/$(PROJECT_NAME)
 
-SRC_CXXFLAGS    = -g -Wall -std=c++11 -I$(SRC_INCLUDEDIR)
-SRC_LIBFLAGS    = -lssl -lcrypto $(SRC_LIB)
+SRC_CXXFLAGS    = -g -Wall -std=c++11 -I$(SRC_INCLUDEDIR) -I$(OPENSSL_INCLUDE)
+SRC_LIBFLAGS    = -L$(OPENSSL_LIBDIR) -lssl -lcrypto $(SRC_LIB)
 
 SRC_FILES       = Config.cpp               \
                   helpers.cpp              \
@@ -77,7 +91,7 @@ tests: $(GTEST_LIB) $(SRC_LIB) $(addprefix $(TEST_OBJDIR)/, $(TEST_OBJS))
 	$(CC) $(TEST_CXXFLAGS) $(TEST_OBJDIR)/*.o $(TEST_LIBFLAGS) -o $(TEST_RUN)
 	chmod 755 $(TEST_RUN)
 	$(TEST_RUN)
- 
+
 clean:
 	rm -rf $(SRC_LIB) $(SRC_RUN) $(SRC_OBJDIR)/* 
 	rm -rf $(TEST_RUN) $(TEST_OBJDIR)/*

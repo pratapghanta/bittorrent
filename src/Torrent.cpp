@@ -1,44 +1,56 @@
 #include <iostream>
 #include <cmath>
 
-#include "Defaults.hpp"
-#include "helpers.hpp"
 #include "Torrent.hpp"
+#include "Defaults.hpp"
 #include "Metainfo.hpp"
 #include "MinimalTorrentParser.hpp"
 
 namespace BT {
-	BT::Torrent_t::Torrent_t(std::string const& torrent) {
-		TorrentParser const &TP = MinimalTorrentParser();
-		Metainfo const& mi = TP.doParse(torrent);
+	Torrent_t::Torrent_t(/* IN */  std::string const& torrent,
+	                     /* OUT */ STATUSCODE& rStatus)
+			: mFileLength(0), mNumOfPieces(0), mPieceLength(0) {
+		Metainfo_t mi;
+		MinimalTorrentParser_t().Parse(torrent, mi);
+		MI_DictPtr_t const& infoDict = (mi.mData)["info"].value.mDict;
 
-		MI_DictPtr_t const& data = mi.getData();
-		MI_DictPtr_t const& infoDict = (*data)["info"].value.mDict;
-
-		filename = torrent;
-		name = std::string((*infoDict)["name"].value.cStr);
-		fileLength = (*infoDict)["length"].value.nInt;
-		pieceLength = (*infoDict)["piece length"].value.nInt;
-		numOfPieces = static_cast<unsigned int>((fileLength <= pieceLength) ? 1 : ceil(fileLength * 1.0 / pieceLength));
+		mFilename = torrent;
+		mName = std::string((*infoDict)["name"].value.cStr);
+		mFileLength = (*infoDict)["length"].value.nInt;
+		mPieceLength = (*infoDict)["piece length"].value.nInt;
+		mNumOfPieces = static_cast<unsigned int>((mFileLength <= mPieceLength) ? 
+													1 :
+													ceil(mFileLength * 1.0 / mPieceLength));
 
 		std::string const& hashesOfAllPieces = (*infoDict)["pieces"].value.cStr;
-		if (numOfPieces != (hashesOfAllPieces.length() / BT::Defaults::Sha1MdSize))
-			throwErrorAndExit("Invalid .torrent file.");
-		
-		for (unsigned int i = 0; i < numOfPieces; i++) {
-			std::string const& ithPieceHash = hashesOfAllPieces.substr(i*BT::Defaults::Sha1MdSize, BT::Defaults::Sha1MdSize);
-			pieceHashes.push_back(ithPieceHash);
+		if (mNumOfPieces != (hashesOfAllPieces.length() / BT::Defaults::Sha1MdSize)) {
+			rStatus = STATUSCODE::SC_FAIL_BAD_TORRENT;
+			Reset();
+			return;
 		}
+		
+		for (unsigned int i = 0; i < mNumOfPieces; i++) {
+			std::string const& ithPieceHash = hashesOfAllPieces.substr(i*BT::Defaults::Sha1MdSize, BT::Defaults::Sha1MdSize);
+			mPieceHashes.push_back(ithPieceHash);
+		}
+	}
+
+	void Torrent_t::Reset() {
+		mFileLength = 0;
+		mNumOfPieces = 0;
+		mPieceLength = 0;
+		mPieceHashes.clear();
+		mInfoHash.clear();
 	}
 
 	std::ostream& operator<<(std::ostream& os, BT::Torrent_t const& t) {
 		os << "*** Torrent details ***" << std::endl;
-		os << "    Name: " << t.getName() << std::endl;
-		os << "    File size:" << t.getFileLength() << " bytes" << std::endl;
-		os << "    Number of pieces: " << t.getNumOfPieces() << std::endl;
-		os << "    Piece length: " << t.getPieceLength() << " bytes" << std::endl;
+		os << "    Name: " << t.GetName() << std::endl;
+		os << "    File size:" << t.GetFileLength() << " bytes" << std::endl;
+		os << "    Number of pieces: " << t.GetNumOfPieces() << std::endl;
+		os << "    Piece length: " << t.GetPieceLength() << " bytes" << std::endl;
 		os << "    Piece hashes:" << std::endl;
-		for (auto itr = t.getPieceHashes().begin(); itr != t.getPieceHashes().end(); ++itr)
+		for (auto itr = t.GetPieceHashes().begin(); itr != t.GetPieceHashes().end(); ++itr)
 			os << "    " << *itr << std::endl;
 
 		return os;

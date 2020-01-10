@@ -14,6 +14,7 @@
 #include "helpers.hpp"
 #include "Seeder.hpp"
 #include "Leecher.hpp"
+#include "StatusCode.hpp"
 
 namespace {
 	void print(BT::Config_t const& config, BT::Torrent_t const& torrent) {
@@ -47,7 +48,7 @@ void startSeeder(BT::Config_t const& config, BT::Torrent_t const& torrent) {
 }
 
 void startLeechers(BT::Config_t const& config, BT::Torrent_t const& torrent) {
-	BT::PeersList_t peers = std::move(config.getPeers());
+	BT::PeersList_t peers = config.getPeers();
 	for (auto&& seeder : peers) {
 		BT::Leecher_t l(torrent, seeder);
 		l.startTransfer();
@@ -64,7 +65,12 @@ int main (int argc, char * argv[])
 		return 0;
 	}
 
-	BT::Torrent_t const torrent(config.getTorrentFilename());
+	BT::STATUSCODE status = BT::STATUSCODE::SC_SUCCESS;
+	BT::Torrent_t const torrent(config.getTorrentFilename(), status);
+	if (BT::SC_FAILED(status))
+	{
+		return status;
+	}
 	
 	if (config.isVerbose())
 		print(config, torrent);

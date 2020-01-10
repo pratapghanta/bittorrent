@@ -168,5 +168,5 @@ BT::PeersList_t BT::Config_t::getPeers() const {
 		peers.push_back(BT::Peer_t(tokens[0], std::stoi(tokens[1])));
 	}
 
-	return std::move(peers);
+	return peers;
 }

@@ -37,7 +37,7 @@ bool const BT::Seeder_t::LeecherHandler_t::communicatePortocolMessages(void) {
 	bool const handshakeFailed = false;
 
 	leecher.send(BT::Defaults::handshakeMessage.c_str(), BT::Defaults::handshakeMessage.length());
-	leecher.send(torrent.getInfoHash().c_str(), BT::Defaults::Sha1MdSize - 1);
+	leecher.send(torrent.GetInfoHash().c_str(), BT::Defaults::Sha1MdSize - 1);
 	leecher.send(seeder.getId().c_str(), BT::Defaults::Sha1MdSize - 1);
 
 	char buffer[BT::Defaults::MaxBufferSize] = "";
@@ -50,7 +50,7 @@ bool const BT::Seeder_t::LeecherHandler_t::communicatePortocolMessages(void) {
 	auto inSameSwarm = [&]() {
 		memset(buffer, 0, BT::Defaults::MaxBufferSize);
 		leecher.receive(buffer, BT::Defaults::Sha1MdSize - 1);
-		return torrent.getInfoHash().compare(buffer) == 0;
+		return torrent.GetInfoHash().compare(buffer) == 0;
 	};
 
 	auto isExpectedHost = [&]() {
@@ -68,7 +68,7 @@ void BT::Seeder_t::LeecherHandler_t::doTransfer(void) {
 
 	long totalBytesTransferred = 0;
 
-	std::string const avaliablePieces(torrent.getNumOfPieces(), '1');
+	std::string const avaliablePieces(torrent.GetNumOfPieces(), '1');
 	leecher.sendMessage(BT::Message_t::getBitfieldMessage(avaliablePieces));
 
 	auto msg = leecher.receiveMessage(BT::Message_t::MessageType::INTERESTED);
@@ -78,7 +78,7 @@ void BT::Seeder_t::LeecherHandler_t::doTransfer(void) {
 		auto requestMsg = leecher.receiveMessage(BT::Message_t::MessageType::REQUEST);
 		BT::Request_t const request = requestMsg.getRequest();
 
-		BT::BinaryFileHandler_t fileHndl(getDataFilename(torrent.getFileName()));
+		BT::BinaryFileHandler_t fileHndl(getDataFilename(torrent.GetFileName()));
 		fileHndl.seek((request.index * request.length) + request.begin);
 
 		long block = 0;

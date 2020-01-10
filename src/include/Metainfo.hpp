@@ -18,7 +18,7 @@ namespace BT {
 	using MI_DictPtr_t = std::shared_ptr<MI_Dict_t>;
 
 	enum class MI_ObjectKind_t : short {
-		MI_INT,
+		MI_INT,	
 		MI_STRING,
 		MI_LIST,
 		MI_DICT,
@@ -39,15 +39,14 @@ namespace BT {
 		MI_ObjectValue_t value;
 	};
 
-	class Metainfo {
-	public:
-		Metainfo(MI_DictPtr_t const i, std::string const& h) : data(i), infoHash(h) {}
-		MI_DictPtr_t getData() const { return data;  }
-		std::string const getInfoHash() const { return infoHash; }
-
-	private:
-		MI_DictPtr_t data;
-		std::string infoHash;
+	struct Metainfo_t {
+		MI_Dict_t mData;
+		std::string  mInfoHash;
+	
+		void reset() {
+			mData.clear();
+			mInfoHash.clear();
+		}
 	};
 }
 #endif
