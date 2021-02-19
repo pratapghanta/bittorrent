@@ -43,8 +43,8 @@ SRC_FILES       = Config.cpp               \
 
 SRC_OBJS        = $(patsubst %.cpp, %.o, $(SRC_FILES))
 
-GTEST_DIR       = /media/sf_Source/Github/googletest/googletest
-GTEST_LIB       = $(GTEST_DIR)/libgtest.a
+GTEST_DIR       = $(PROJECT_DIR)/../../googletest/googletest
+GTEST_LIB       = $(GTEST_DIR)/../build/lib/libgtest.a
 
 GTEST_CXXFLAGS  = -I$(GTEST_DIR)/include -I$(GTEST_DIR)
 GTEST_LIBFLAGS  = -lpthread $(GTEST_LIB)
@@ -62,6 +62,7 @@ TEST_LIBFLAGS   = $(GTEST_LIBFLAGS) $(SRC_LIBFLAGS)
 TEST_FILES      = main.cpp                     \
                   testConfig.cpp               \
                   testMessage.cpp              \
+                  testMinimalTorrentParser.cpp 
 
 TEST_OBJS       = $(patsubst %.cpp, %.o, $(TEST_FILES))
 
