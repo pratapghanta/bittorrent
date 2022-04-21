@@ -7,6 +7,8 @@
 #include "Config.hpp"
 #include "helpers.hpp"
 
+/* TODO: Add exception safety */
+
 namespace {
     static char constexpr BC_START_INT = 'i';
     static char constexpr BC_END_STRLEN = ':';
@@ -33,8 +35,8 @@ namespace BT {
 
     MinimalTorrentParser_t::MinimalTorrentParser_t(/* IN */ MinimalTorrentParser_t&& mtp)
         : mInfoDict(false),
-	  mStartInfoDict(0),
-	  mEndInfoDict(0) {
+	      mStartInfoDict(0),
+	      mEndInfoDict(0) {
         *this = std::move(mtp);
     }
 
@@ -64,9 +66,9 @@ namespace BT {
     }
 
 
-    STATUSCODE  MinimalTorrentParser_t::Parse(/* IN  */  std::string const& strFileName,
+    STATUSCODE  MinimalTorrentParser_t::Parse(/* IN  */ std::string const& strFileName,
                                               /* OUT */ Metainfo_t& rInfo) const {
-        rInfo.reset();
+        rInfo.Reset();
 
         STATUSCODE status = openFile(strFileName);
         if (SC_FAILED(status))
@@ -80,7 +82,7 @@ namespace BT {
         }
 
         MI_Object_t bcDict = extract_MI_Dict();
-        rInfo.mData = *(bcDict.value.mDict.get()); 
+        rInfo.mData = *(bcDict.Get<MI_DictPtr_t>()); 
         return computeInfoDictHash(rInfo.mInfoHash);
     }
 
@@ -102,7 +104,9 @@ namespace BT {
     STATUSCODE MinimalTorrentParser_t::computeInfoDictHash(/* OUT */ std::string& rHash) const {
     	rHash.clear();
 
-    	if (!mIfstream.is_open() || mEndInfoDict < mStartInfoDict) {
+    	if (!mIfstream.is_open() || 
+            mEndInfoDict < mStartInfoDict || 
+            mEndInfoDict - mStartInfoDict + 1 >= BT::Defaults::MaxBufferSize ) {
     		Error("Unable to compute hash value for Info dictionary.");
     		return STATUSCODE::SC_FAIL_UNKNOWN;
     	}
@@ -129,7 +133,7 @@ namespace BT {
     }
 
 
-    STATUSCODE MinimalTorrentParser_t::extractLong(/* IN  */ char delim,
+    STATUSCODE MinimalTorrentParser_t::extractLong(/* IN  */ char const delim,
                                                    /* OUT */ long& rOut) const {
         rOut = 0;
 
@@ -157,8 +161,7 @@ namespace BT {
         }
 
         MI_Object_t obj;
-        obj.kind = BT::MI_ObjectKind_t::MI_INT;
-        obj.value.nInt = static_cast<BT::MI_Int_t>(value);
+        obj.Set<>(static_cast<BT::MI_Int_t>(value));
         return obj;
     }
 
@@ -184,10 +187,10 @@ namespace BT {
         for (int i = 0; i < strLen; i++)
             if ('\0' == buffer[i])
                 buffer[i] = '_';
+        buffer[strLen] = '\0';
 
         BT::MI_Object_t obj;
-        obj.kind = BT::MI_ObjectKind_t::MI_STRING;
-        obj.value.cStr = static_cast<BT::MI_String_t>(std::string(buffer));
+        obj.Set<>(static_cast<BT::MI_String_t>(std::string(buffer)));
         return obj;
     }
 
@@ -207,13 +210,11 @@ namespace BT {
             if (ch == BC_END_VALUE)
                 break;
 
-            BT::MI_Object_t value = extractData(ch);
-            data->push_back(value);
+            data->push_back(extractData(ch));
         }
 
         BT::MI_Object_t obj;
-        obj.kind = BT::MI_ObjectKind_t::MI_LIST;
-        obj.value.vList = data;
+        obj.Set<>(data);
         return obj;
     }
 
@@ -237,7 +238,8 @@ namespace BT {
         };
 
         while (true) {
-            BT::MI_String_t key = extract_MI_String().value.cStr;
+            BT::MI_Object_t keyObj = extract_MI_String();
+            BT::MI_String_t key = keyObj.Get<MI_String_t>();
 
             if (0 == key.compare("info")) {
                 mInfoDict = true;
@@ -249,8 +251,7 @@ namespace BT {
             if (SC_FAILED(status)) {
                 Error("Torrent parsing failed when extracting MI_DICT.");
             } else {
-                BT::MI_Object_t value = extractData(ch);
-                data->emplace(key, value);
+                data->emplace(key, extractData(ch));
             }
 
             if (endOfDict()) {
@@ -263,9 +264,7 @@ namespace BT {
         }
 
         BT::MI_Object_t obj;
-        obj.kind = BT::MI_ObjectKind_t::MI_DICT;
-        obj.value.mDict = data;
-
+        obj.Set<>(data);
         return obj;
     }
 

@@ -10,7 +10,7 @@
 namespace BT {
 	class Leecher_t {
 	public:
-		Leecher_t(BT::Torrent_t const& t, Peer_t& seeder);
+		Leecher_t(BT::Torrent_t const& t, Peer_t const& seeder);
 		void startTransfer();
 
 	private:

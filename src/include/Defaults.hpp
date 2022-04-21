@@ -18,7 +18,7 @@ namespace BT {
 		std::string const torrentFileExtension = ".torrent";
 		std::string const defaultLogFilename = "bt_client.log";
 		
-		int constexpr BadSocketFD = -1;
+		int constexpr BadFD = -1;
 		std::string const handshakeMessage = std::string({ 19 }) + "BitTorrent Protocol00000000";
 	}
 }

@@ -12,16 +12,9 @@
 #include "Config.hpp"
 #include "Torrent.hpp"
 #include "helpers.hpp"
-#include "Seeder.hpp"
-#include "Leecher.hpp"
-#include "StatusCode.hpp"
+#include "Errors.hpp"
 
 namespace {
-	void print(BT::Config_t const& config, BT::Torrent_t const& torrent) {
-		std::cout << config << std::endl;
-		std::cout << torrent << std::endl;
-	}
-
 	void handleInterruptSignal() {
 		struct sigaction act;
 
@@ -35,23 +28,10 @@ namespace {
 		std::vector<std::string> data;
 
 		data.reserve(argc);
-		for (int i = 0; i < argc; i++)
+		for (int i = 1; i < argc; i++)
 			data.push_back(std::string(argv[i]));
 
 		return data;
-	}
-}
-
-void startSeeder(BT::Config_t const& config, BT::Torrent_t const& torrent) {
-	BT::Seeder_t s(torrent, config.getSeederPort());
-	s.startTransfer();
-}
-
-void startLeechers(BT::Config_t const& config, BT::Torrent_t const& torrent) {
-	BT::PeersList_t peers = config.getPeers();
-	for (auto&& seeder : peers) {
-		BT::Leecher_t l(torrent, seeder);
-		l.startTransfer();
 	}
 }
 
@@ -60,28 +40,12 @@ int main (int argc, char * argv[])
 	handleInterruptSignal();
 
 	BT::Config_t const config(getVectorOfStrings(argc, argv));
-	if (config.isHelpRequested()) {
-		std::cout << getHelpMesssage() << std::endl;
-		return 0;
-	}
-
-	BT::STATUSCODE status = BT::STATUSCODE::SC_SUCCESS;
-	BT::Torrent_t const torrent(config.getTorrentFilename(), status);
-	if (BT::SC_FAILED(status))
-	{
-		return status;
-	}
+	config.StartPeer();
 	
-	if (config.isVerbose())
-		print(config, torrent);
-
-	config.isSeeder() ? startSeeder(config, torrent) : startLeechers(config, torrent);
 	return 0;
 }
-
-	
 		
-	#if 0
+#if 0
 	void *threadData = NULL;
 
 	pthread_t seederId[cn_MaxConnections];
@@ -111,9 +75,7 @@ int main (int argc, char * argv[])
 			if(piecesInfo[i].state != PC_COMPLETE)
 				isTransfered = false;
 	}
-	#endif
 
-#if 0
 	/* Transfer complete     */
 	/* Assembling the pieces */
 	if(isTransfered)

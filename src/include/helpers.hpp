@@ -3,8 +3,8 @@
 
 #include <string>
 
-extern std::string const calculateId(const std::string& ip, const unsigned int& port);
-extern void throwErrorAndExit(std::string const& errorMsg);
-extern std::string const getHelpMesssage();
+extern void ThrowErrorAndExit(std::string const& errorMsg);
+extern std::string const CalculateId(const std::string& ip, const unsigned int& port);
+extern std::string const GetHelpMesssage();
 
 #endif

@@ -1,14 +1,14 @@
-#ifndef TORRENT_PARSER_HPP
+#if !defined(TORRENT_PARSER_HPP)
 #define TORRENT_PARSER_HPP
 
-#include "StatusCode.hpp"
+#include "Errors.hpp"
 #include "Metainfo.hpp"
 
 namespace BT {
 	/* Interface to represent algorithms for parsing .torrent file   */
 	/*                                                               */
 	/* Implementation for this project is done only to support       */
-	/* parsing of standard fields in .torrent file.                  */
+	/* parsing of basic fields in .torrent file.                     */
 	/*                                                               */
 	/* Room for improving the algorithm is created by programming to */
 	/* interface so that algorithm can be changed with less ripples. */
@@ -19,4 +19,4 @@ namespace BT {
 		                         /* OUT */ Metainfo_t& rInfo) const = 0;
 	};
 }
-#endif // #ifndef TORRENT_PARSER_HPP
+#endif // !defined(TORRENT_PARSER_HPP)

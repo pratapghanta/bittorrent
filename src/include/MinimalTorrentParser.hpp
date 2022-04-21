@@ -1,4 +1,4 @@
-#ifndef MINIMAL_TORRENT_PARSER_HPP
+#if !defined(MINIMAL_TORRENT_PARSER_HPP)
 #define MINIMAL_TORRENT_PARSER_HPP
 
 #include <iostream>
@@ -17,7 +17,7 @@ namespace BT {
         MinimalTorrentParser_t(/* IN */ MinimalTorrentParser_t&&);
         MinimalTorrentParser_t& operator=(/* IN */ MinimalTorrentParser_t&&);
 
-        STATUSCODE Parse(/* IN  */  std::string const& fileName,
+        STATUSCODE Parse(/* IN  */ std::string const& fileName,
                          /* OUT */ Metainfo_t& rInfo) const override;
 
     private:
@@ -27,7 +27,7 @@ namespace BT {
         STATUSCODE computeInfoDictHash(/* OUT */ std::string& rHash) const;
 
         STATUSCODE extractChar(/* OUT */ char& ch) const;
-        STATUSCODE extractLong(/* IN  */  char const delim,
+        STATUSCODE extractLong(/* IN  */ char const delim,
                                /* OUT */ long& rOut) const;
 
         MI_Object_t extract_MI_Int() const;
@@ -44,4 +44,4 @@ namespace BT {
     };
 }
 
-#endif // #ifndef MINIMAL_TORRENT_PARSER_HPP
+#endif // !defined(MINIMAL_TORRENT_PARSER_HPP)

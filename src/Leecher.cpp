@@ -43,85 +43,55 @@ namespace {
 
 		return torrent.GetPieceHashes()[pieceIndex].compare(reinterpret_cast<char*>(hash));
 	}
-
-	BT::Peer_t getClientDetails(int const sockfd) {
-		sockaddr_in cli_addr;
-		socklen_t len = BT::Defaults::IPSize - 1;
-
-		if (getsockname(sockfd, (sockaddr*)&cli_addr, &len) == -1)
-			return BT::Peer_t("", 0);
-
-		char buffer[BT::Defaults::IPSize] = "";
-		inet_ntop(cli_addr.sin_family, (void *)&cli_addr.sin_addr, buffer, BT::Defaults::IPSize - 1);
-		std::string ip(buffer);
-
-		unsigned int port = ntohs(cli_addr.sin_port);
-
-		return BT::Peer_t(sockfd, ip, port);
-	}
-
-	BT::Peer_t establishConnectionToSeeder(std::string const& ip, unsigned int const port) {
-		int sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-		if (sockfd < 0)
-			return BT::Peer_t("", 0);
-
-		sockaddr_in serv_addr;
-		memset((void *)&serv_addr, 0, sizeof(serv_addr));
-		serv_addr.sin_family = AF_INET;
-		serv_addr.sin_addr.s_addr = inet_addr(ip.c_str());
-		serv_addr.sin_port = htons(port);
-
-		if (connect(sockfd, (sockaddr*)&serv_addr, sizeof(serv_addr)) != 0)
-			return BT::Peer_t("", 0);
-
-		return getClientDetails(sockfd);
-	}
 }
 
-BT::Leecher_t::Leecher_t(BT::Torrent_t const& t, Peer_t& s)
-	: torrent(t), seeder(std::move(s)), leecher(establishConnectionToSeeder(s.getIp(), s.getPort())) {
+BT::Leecher_t::Leecher_t(BT::Torrent_t const& t, Peer_t const& s)
+	: torrent(t), 
+	  seeder(s) 
+{
+	leecher.EstablishConnectionTo(seeder);
 }
 
 bool const BT::Leecher_t::communicatePortocolMessages() {
-	seeder.send(BT::Defaults::handshakeMessage.c_str(), BT::Defaults::handshakeMessage.length());
-	seeder.send(torrent.GetInfoHash().c_str(), BT::Defaults::Sha1MdSize - 1);
-	seeder.send(leecher.getId().c_str(), BT::Defaults::Sha1MdSize - 1);
+	seeder.Send(BT::Defaults::handshakeMessage.c_str(), BT::Defaults::handshakeMessage.length());
+	seeder.Send(torrent.GetInfoHash().c_str(), BT::Defaults::Sha1MdSize - 1);
+	seeder.Send(leecher.GetId().c_str(), BT::Defaults::Sha1MdSize - 1);
 
 	char buffer[BT::Defaults::MaxBufferSize] = "";
-	seeder.receive(buffer, BT::Defaults::handshakeMessage.length());
+	seeder.Receive(buffer, BT::Defaults::handshakeMessage.length());
 	if (BT::Defaults::handshakeMessage.compare(buffer) != 0)
 		return false;
 
 	auto inSameSwarm = [&]() {
 		memset(buffer, 0, BT::Defaults::MaxBufferSize);
-		seeder.receive(buffer, BT::Defaults::Sha1MdSize - 1);
+		seeder.Receive(buffer, BT::Defaults::Sha1MdSize - 1);
 		return torrent.GetInfoHash().compare(buffer) == 0;
 	};
 
 	auto expectedSeeder = [&]() {
 		memset(buffer, 0, BT::Defaults::MaxBufferSize);
-		seeder.receive(buffer, BT::Defaults::Sha1MdSize - 1);
-		return seeder.getId().compare(buffer) == 0;
+		seeder.Receive(buffer, BT::Defaults::Sha1MdSize - 1);
+		return seeder.GetId().compare(buffer) == 0;
 	};
 
 	return inSameSwarm() && expectedSeeder();
 }
 
 bool const BT::Leecher_t::getPieceFromSeeder(long const interestedPiece) {
-	auto msg = seeder.receiveMessage(BT::Message_t::MessageType::BITFIELD);
+	auto msg = seeder.ReceiveMessage(BT::Message_t::MessageType::BITFIELD);
 
 	if (!isPieceAvailableAtSeeder(msg, interestedPiece)) {
-		seeder.sendMessage(Message_t::getNotInterestedMessage());
+		seeder.SendMessage(Message_t::getNotInterestedMessage());
 		return false;
 	}
 
-	seeder.sendMessage(Message_t::getInterestedMessage());
-	msg = seeder.receiveMessage(BT::Message_t::MessageType::CHOKE); /* Expecting choke/unchoke */
+	seeder.SendMessage(Message_t::getInterestedMessage());
+	msg = seeder.ReceiveMessage(BT::Message_t::MessageType::CHOKE); /* Expecting choke/unchoke */
 	if (msg.isChoked()) return false;
 
 	int const begin = 0;
 	auto requestDetails = BT::Request_t(interestedPiece, begin, torrent.GetPieceLength());
-	seeder.sendMessage(Message_t::getRequestMessage(requestDetails));
+	seeder.SendMessage(Message_t::getRequestMessage(requestDetails));
 
 	auto isEndOfPiece = [&](long const currPos) { return currPos >= torrent.GetPieceLength(); };
 	auto isEndOfDataFile = [&](long const currPos) { return (interestedPiece * torrent.GetPieceLength()) + begin + currPos >= torrent.GetFileLength(); };
@@ -129,13 +99,13 @@ bool const BT::Leecher_t::getPieceFromSeeder(long const interestedPiece) {
 	std::string fileContents;
 	while (!isEndOfPiece(fileContents.length()) && !isEndOfDataFile(fileContents.length())) {
 		if (fileContents.length() % BT::Defaults::BlockSize == 0) {
-			auto pieceMsg = seeder.receiveMessage(BT::Message_t::MessageType::PIECE);
+			auto pieceMsg = seeder.ReceiveMessage(BT::Message_t::MessageType::PIECE);
 			if (!(pieceMsg.getPiece() == BT::Piece_t(interestedPiece, fileContents.length(), nullptr)))
 				return false;
-			seeder.sendMessage(BT::Message_t::getKeepAliveMessage());
+			seeder.SendMessage(BT::Message_t::getKeepAliveMessage());
 		}
 		char dataBuf[2] = "\0";
-		seeder.receive(dataBuf, 1);
+		seeder.Receive(dataBuf, 1);
 		fileContents += std::string(dataBuf);
 	}
 
@@ -156,6 +126,6 @@ void BT::Leecher_t::startTransfer() {
 		/* Broadcast to all other peers */
 		/* Print to log about the downloaded piece */
 		/* Synchronize threads such that this piece is not downloaded again */
-		seeder.sendMessage(Message_t::getNotInterestedMessage());
+		seeder.SendMessage(Message_t::getNotInterestedMessage());
 	}
 }

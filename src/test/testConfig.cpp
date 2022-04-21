@@ -8,6 +8,7 @@
 #include "Config.hpp"
 #include "ConfigExceptions.hpp"
 
+#if 0
 namespace {
 	std::vector<std::string> getVectorOfString(std::string const& data) {
 		std::vector<std::string> dataVec;
@@ -152,3 +153,4 @@ TEST(testArgumentParsing, noExceptionWhenHelpIsRequested) {
 	std::string const args("-b 100 -s /saveFile.txt -l /bittorrent.logs -p 256.0.0.1:43 -v -h");
 	EXPECT_NO_THROW(BT::Config_t(getVectorOfString(args)));
 }
+#endif

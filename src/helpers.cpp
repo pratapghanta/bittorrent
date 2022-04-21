@@ -6,7 +6,12 @@
 #include "Defaults.hpp"
 #include "helpers.hpp"
 
-std::string const getHelpMesssage() {
+void ThrowErrorAndExit(std::string const& errorMsg) {
+	std::cerr << "ERROR: " << errorMsg << std::endl;
+	exit(-1);
+}
+
+std::string const GetHelpMesssage() {
 	return std::string(
 		"bittorrent [OPTIONS] file.torrent\n"
 		"  -h            \t Print the help screen\n"
@@ -20,12 +25,7 @@ std::string const getHelpMesssage() {
 		"  -v            \t verbose, print additional verbose info\n");
 }
 
-void throwErrorAndExit(std::string const& errorMsg) {
-	std::cerr << "ERROR: " << errorMsg << std::endl;
-	exit(-1);
-}
-
-std::string const calculateId(std::string const& ip, unsigned int const& port) {
+std::string const CalculateId(std::string const& ip, unsigned int const& port) {
 	std::ostringstream oss;
 	oss << ip << port;
 

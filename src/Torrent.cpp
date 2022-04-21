@@ -12,17 +12,17 @@ namespace BT {
 			: mFileLength(0), mNumOfPieces(0), mPieceLength(0) {
 		Metainfo_t mi;
 		MinimalTorrentParser_t().Parse(torrent, mi);
-		MI_DictPtr_t const& infoDict = (mi.mData)["info"].value.mDict;
+		MI_DictPtr_t const infoDict = ((mi.mData)["info"]).Get<MI_DictPtr_t>();
 
 		mFilename = torrent;
-		mName = std::string((*infoDict)["name"].value.cStr);
-		mFileLength = (*infoDict)["length"].value.nInt;
-		mPieceLength = (*infoDict)["piece length"].value.nInt;
+		mName = ((*infoDict)["name"]).Get<MI_String_t>();
+		mFileLength = ((*infoDict)["length"]).Get<MI_Int_t>();
+		mPieceLength = ((*infoDict)["piece length"]).Get<MI_Int_t>();
 		mNumOfPieces = static_cast<unsigned int>((mFileLength <= mPieceLength) ? 
 													1 :
 													ceil(mFileLength * 1.0 / mPieceLength));
 
-		std::string const& hashesOfAllPieces = (*infoDict)["pieces"].value.cStr;
+		std::string const& hashesOfAllPieces = ((*infoDict)["pieces"]).Get<MI_String_t>();
 		if (mNumOfPieces != (hashesOfAllPieces.length() / BT::Defaults::Sha1MdSize)) {
 			rStatus = STATUSCODE::SC_FAIL_BAD_TORRENT;
 			Reset();

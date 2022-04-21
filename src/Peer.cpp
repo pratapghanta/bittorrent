@@ -9,60 +9,95 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <functional>
+#include <netinet/in.h>
+#include <netinet/ip.h> //ip hdeader library (must come before ip_icmp.h)
+#include <netinet/ip_icmp.h> //icmp header
+#include <arpa/inet.h> //internet address library
+#include <netdb.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <openssl/sha.h>
 
 #include "Peer.hpp"
 #include "Defaults.hpp"
 #include "helpers.hpp"
+#include "Errors.hpp"
 
-namespace {
-	struct UnExpectedMessageException : std::exception {
-		const char * what() const throw () {
-			return "Exception: Malformed message is being communicated.";
-		}
+namespace 
+{
+	struct UnExpectedMessage : BT::BTException 
+	{
+		UnExpectedMessage()
+            : BT::BTException("Malformed message is being communicated.") 
+        {}
 	};
 
-	struct NonBlockableSocketException : std::exception {
-		const char * what() const throw () {
-			return "Exception: Unable to make socket non-blockable.";
-		}
+	struct BadSocketDescriptor : BT::BTException 
+	{
+		BadSocketDescriptor()
+            : BT::BTException("Bad socket descriptor.") 
+        {}
 	};
 
-	void makeSocketNonBlockable(int sockfd) {
+	struct UnableToCreateSocket : BT::BTException 
+	{
+		UnableToCreateSocket()
+            : BT::BTException("Unable to create a socket.") 
+        {}
+	};
+
+	struct SocketNonBlockable : BT::BTException 
+	{
+		SocketNonBlockable()
+            : BT::BTException("Unable to make socket non-blockable.") 
+        {}
+	};
+
+	void makeSocketNonBlockable(int sockfd) 
+	{
 		int flags = fcntl(sockfd, F_GETFL, 0);
 		if (fcntl(sockfd, F_SETFL, flags | O_NONBLOCK))
-			throw NonBlockableSocketException();
+			throw SocketNonBlockable();
 	}
 
-	std::string receiveString(BT::Peer_t const& peer, unsigned int const nBytesToRead) {
+	std::string receiveString(BT::Peer_t const& peer, unsigned int const nBytesToRead) 
+	{
 		char buffer[BT::Defaults::MaxBufferSize] = "";
-		peer.receive(static_cast<void*>(buffer), nBytesToRead);
+		peer.Receive(static_cast<void*>(buffer), nBytesToRead);
 		buffer[nBytesToRead] = '\0';
 
 		return std::string(buffer);
 	}
 
-	long const receiveLong(BT::Peer_t const& peer) {
+	long const receiveLong(BT::Peer_t const& peer) 
+	{
 		unsigned int const nBytesToRead = sizeof(long);
 		auto buffer = receiveString(peer, nBytesToRead);
 		return std::stol(buffer);
 	}
 
-	unsigned long const receiveLengthOfMessage(BT::Peer_t const& peer) {
+	unsigned long const receiveLengthOfMessage(BT::Peer_t const& peer) 
+	{
 		unsigned int const nBytesToRead = sizeof(unsigned long);
 		auto buffer = receiveString(peer, nBytesToRead);
 		return std::stoul(buffer);
 	}
 
-	BT::Message_t::MessageType const receiveTypeOfMessage(BT::Peer_t const& peer) {
+	BT::Message_t::MessageType const receiveTypeOfMessage(BT::Peer_t const& peer) 
+	{
 		unsigned int const nBytesToRead = 1;
 		auto buffer = receiveString(peer, nBytesToRead);
 		return BT::Message_t::MessageType(std::stoi(buffer));
 	}
 
 	template<BT::Message_t::MessageType msgType>
-	BT::Message_t const receiveSpecificMessage(BT::Peer_t const& peer) {
-		if (receiveLengthOfMessage(peer) == 0) return BT::Message_t::getKeepAliveMessage();
-		if (receiveTypeOfMessage(peer) != msgType) throw UnExpectedMessageException();
+	BT::Message_t const receiveSpecificMessage(BT::Peer_t const& peer) 
+	{
+		if (receiveLengthOfMessage(peer) == 0) 
+			return BT::Message_t::getKeepAliveMessage();
+
+		if (receiveTypeOfMessage(peer) != msgType)
+			throw UnExpectedMessage();
 		
 		std::map<BT::Message_t::MessageType, std::function<BT::Message_t const()>> handlers;
 		handlers[BT::Message_t::MessageType::CHOKE] = BT::Message_t::getChokedMessage;
@@ -71,15 +106,20 @@ namespace {
 		handlers[BT::Message_t::MessageType::NOTINTERESTED] = BT::Message_t::getNotInterestedMessage;
 
 		auto itr = handlers.find(msgType);
-		if (itr != handlers.end()) throw UnExpectedMessageException();
+		if (itr != handlers.end()) 
+			throw UnExpectedMessage();
 
 		return itr->second();
 	}
 
 	template<>
-	BT::Message_t const receiveSpecificMessage<BT::Message_t::MessageType::HAVE>(BT::Peer_t const& peer) {
-		if (receiveLengthOfMessage(peer) == 0) return BT::Message_t::getKeepAliveMessage();
-		if(receiveTypeOfMessage(peer) != BT::Message_t::MessageType::HAVE) throw UnExpectedMessageException();
+	BT::Message_t const receiveSpecificMessage<BT::Message_t::MessageType::HAVE>(BT::Peer_t const& peer) 
+	{
+		if (receiveLengthOfMessage(peer) == 0) 
+			return BT::Message_t::getKeepAliveMessage();
+
+		if(receiveTypeOfMessage(peer) != BT::Message_t::MessageType::HAVE) 
+			throw UnExpectedMessage();
 
 		unsigned int const nBytesToRead = sizeof(long);
 		auto buffer = receiveString(peer, nBytesToRead);
@@ -87,62 +127,82 @@ namespace {
 	}
 
 	template<>
-	BT::Message_t const receiveSpecificMessage<BT::Message_t::MessageType::BITFIELD>(BT::Peer_t const& peer) {
+	BT::Message_t const receiveSpecificMessage<BT::Message_t::MessageType::BITFIELD>(BT::Peer_t const& peer) 
+	{
 		auto msgLength = receiveLengthOfMessage(peer);
-		if (msgLength == 0) return BT::Message_t::getKeepAliveMessage();
-		if (receiveTypeOfMessage(peer) != BT::Message_t::MessageType::HAVE) throw UnExpectedMessageException();
+		if (msgLength == 0) 
+			return BT::Message_t::getKeepAliveMessage();
+
+		if (receiveTypeOfMessage(peer) != BT::Message_t::MessageType::HAVE) 
+			throw UnExpectedMessage();
 
 		auto buffer = receiveString(peer, msgLength);
 		return  BT::Message_t::getBitfieldMessage(buffer);
 	}
 
 	template<>
-	BT::Message_t const receiveSpecificMessage<BT::Message_t::MessageType::REQUEST>(BT::Peer_t const& peer) {
-		if (receiveLengthOfMessage(peer) == 0) return BT::Message_t::getKeepAliveMessage();
-		if (receiveTypeOfMessage(peer) != BT::Message_t::MessageType::HAVE) throw UnExpectedMessageException();
+	BT::Message_t const receiveSpecificMessage<BT::Message_t::MessageType::REQUEST>(BT::Peer_t const& peer) 
+	{
+		if (receiveLengthOfMessage(peer) == 0) 
+			return BT::Message_t::getKeepAliveMessage();
+
+		if (receiveTypeOfMessage(peer) != BT::Message_t::MessageType::HAVE) 
+			throw UnExpectedMessage();
 
 		BT::Request_t request(receiveLong(peer), receiveLong(peer), receiveLong(peer));
 		return  BT::Message_t::getRequestMessage(request);
 	}
 
 	template<>
-	BT::Message_t const receiveSpecificMessage<BT::Message_t::MessageType::PIECE>(BT::Peer_t const& peer) {
-		if (receiveLengthOfMessage(peer) == 0) return BT::Message_t::getKeepAliveMessage();
-		if (receiveTypeOfMessage(peer) != BT::Message_t::MessageType::HAVE) throw UnExpectedMessageException();
+	BT::Message_t const receiveSpecificMessage<BT::Message_t::MessageType::PIECE>(BT::Peer_t const& peer) 
+	{
+		if (receiveLengthOfMessage(peer) == 0) 
+			return BT::Message_t::getKeepAliveMessage();
+
+		if (receiveTypeOfMessage(peer) != BT::Message_t::MessageType::HAVE) 
+			throw UnExpectedMessage();
 
 		BT::Piece_t piece(receiveLong(peer), receiveLong(peer), nullptr);
 		return  BT::Message_t::getPieceMessage(piece);
 	}
 
 	template<>
-	BT::Message_t const receiveSpecificMessage<BT::Message_t::MessageType::CANCEL>(BT::Peer_t const& peer) {
-		if (receiveLengthOfMessage(peer) == 0) return BT::Message_t::getKeepAliveMessage();
-		if (receiveTypeOfMessage(peer) != BT::Message_t::MessageType::HAVE) throw UnExpectedMessageException();
+	BT::Message_t const receiveSpecificMessage<BT::Message_t::MessageType::CANCEL>(BT::Peer_t const& peer) 
+	{
+		if (receiveLengthOfMessage(peer) == 0) 
+			return BT::Message_t::getKeepAliveMessage();
+
+		if (receiveTypeOfMessage(peer) != BT::Message_t::MessageType::HAVE) 
+			throw UnExpectedMessage();
 
 		BT::Request_t cancel(receiveLong(peer), receiveLong(peer), receiveLong(peer));
 		return  BT::Message_t::getCancelMessage(cancel);
 	}
 
-	void sendMessageLength(BT::Peer_t const &peer, BT::Message_t const &msg) {
+	void sendMessageLength(BT::Peer_t const &peer, BT::Message_t const &msg) 
+	{
 		char buffer[BT::Defaults::MaxBufferSize] = "";
 
 		auto msgLength = msg.getLength();
 		memcpy(buffer, &msgLength, sizeof(msgLength));
-		peer.send(buffer, sizeof(msgLength));
+		peer.Send(buffer, sizeof(msgLength));
 	}
 
-	void sendMessageType(BT::Peer_t const &peer, BT::Message_t const &msg) {
+	void sendMessageType(BT::Peer_t const &peer, BT::Message_t const &msg) 
+	{
 		// char buffer[BT::Defaults::MaxBufferSize] = "";
 		// ??
 	}
 
-	void sendLong(BT::Peer_t const& peer, long const value) {
+	void sendLong(BT::Peer_t const& peer, long const value) 
+	{
 		char buffer[BT::Defaults::MaxBufferSize] = "";
 		memcpy(buffer, &value, sizeof(value));
-		peer.send(buffer, sizeof(value));
+		peer.Send(buffer, sizeof(value));
 	}
 
-	void sendMessageAttributes(BT::Peer_t const &peer, BT::Message_t const &msg) {
+	void sendMessageAttributes(BT::Peer_t const &peer, BT::Message_t const &msg) 
+	{
 		sendMessageLength(peer, msg);
 		sendMessageType(peer, msg);
 	}
@@ -151,46 +211,53 @@ namespace {
 	void sendSpecificMessage(BT::Peer_t const &peer, BT::Message_t const &msg) {}
 
 	template<>
-	void sendSpecificMessage<BT::Message_t::MessageType::CHOKE>(BT::Peer_t const &peer, BT::Message_t const &msg) {
+	void sendSpecificMessage<BT::Message_t::MessageType::CHOKE>(BT::Peer_t const &peer, BT::Message_t const &msg) 
+	{
 		sendMessageAttributes(peer, msg);
 	}
 
 	template<>
-	void sendSpecificMessage<BT::Message_t::MessageType::UNCHOKE>(BT::Peer_t const &peer, BT::Message_t const &msg) {
+	void sendSpecificMessage<BT::Message_t::MessageType::UNCHOKE>(BT::Peer_t const &peer, BT::Message_t const &msg) 
+	{
 		sendMessageAttributes(peer, msg);
 	}
 
 	template<>
-	void sendSpecificMessage<BT::Message_t::MessageType::INTERESTED>(BT::Peer_t const &peer, BT::Message_t const &msg) {
+	void sendSpecificMessage<BT::Message_t::MessageType::INTERESTED>(BT::Peer_t const &peer, BT::Message_t const &msg) 
+	{
 		sendMessageLength(peer, msg);
 		if (msg.getLength() == 0) return; /* Keepalive */
 		sendMessageType(peer, msg);
 	}
 
 	template<>
-	void sendSpecificMessage<BT::Message_t::MessageType::NOTINTERESTED>(BT::Peer_t const &peer, BT::Message_t const &msg) {
+	void sendSpecificMessage<BT::Message_t::MessageType::NOTINTERESTED>(BT::Peer_t const &peer, BT::Message_t const &msg) 
+	{
 		sendMessageAttributes(peer, msg);
 	}
 
 	template<>
-	void sendSpecificMessage<BT::Message_t::MessageType::HAVE>(BT::Peer_t const &peer, BT::Message_t const &msg) {
+	void sendSpecificMessage<BT::Message_t::MessageType::HAVE>(BT::Peer_t const &peer, BT::Message_t const &msg) 
+	{
 		sendMessageAttributes(peer, msg);
 		sendLong(peer, msg.getHave());
 	}
 
 	template<>
-	void sendSpecificMessage<BT::Message_t::MessageType::BITFIELD>(BT::Peer_t const &peer, BT::Message_t const &msg) {
+	void sendSpecificMessage<BT::Message_t::MessageType::BITFIELD>(BT::Peer_t const &peer, BT::Message_t const &msg) 
+	{
 		sendMessageAttributes(peer, msg);
 
 		auto bitfield = msg.getBitfield();
 		char buffer[BT::Defaults::MaxBufferSize] = "";
 
 		strcpy(buffer, bitfield.c_str());
-		peer.send(buffer, bitfield.length());
+		peer.Send(buffer, bitfield.length());
 	}
 
 	template<>
-	void sendSpecificMessage<BT::Message_t::MessageType::REQUEST>(BT::Peer_t const &peer, BT::Message_t const &msg) {
+	void sendSpecificMessage<BT::Message_t::MessageType::REQUEST>(BT::Peer_t const &peer, BT::Message_t const &msg) 
+	{
 		sendMessageAttributes(peer, msg);
 
 		auto request = msg.getRequest();
@@ -200,7 +267,8 @@ namespace {
 	}
 
 	template<>
-	void sendSpecificMessage<BT::Message_t::MessageType::PIECE>(BT::Peer_t const &peer, BT::Message_t const &msg) {
+	void sendSpecificMessage<BT::Message_t::MessageType::PIECE>(BT::Peer_t const &peer, BT::Message_t const &msg) 
+	{
 		sendMessageAttributes(peer, msg);
 
 		auto piece = msg.getPiece();
@@ -209,7 +277,8 @@ namespace {
 	}
 
 	template<>
-	void sendSpecificMessage<BT::Message_t::MessageType::CANCEL>(BT::Peer_t const &peer, BT::Message_t const &msg) {
+	void sendSpecificMessage<BT::Message_t::MessageType::CANCEL>(BT::Peer_t const &peer, BT::Message_t const &msg) 
+	{
 		sendMessageAttributes(peer, msg);
 
 		auto cancel = msg.getRequest();
@@ -219,38 +288,112 @@ namespace {
 	}
 }
 
-BT::Peer_t::Peer_t(int const& sockfd, std::string const& ip, unsigned int const& port ) 
-     : sockfd(sockfd), ip(ip), port(port), id(calculateId(ip, port)) {
+BT::Peer_t::Peer_t()
+	: sockfd(BT::Defaults::BadFD),
+	  port(0)
+{}
+
+BT::Peer_t::Peer_t(int const& fd, std::string const& ip, unsigned int const& port) 
+     : sockfd(BT::Defaults::BadFD), 
+	   ip(ip),
+	   port(port), 
+	   id(CalculateId(ip, port)) 
+{
+	if (fd == BT::Defaults::BadFD)
+		return;
+
+	sockfd = dup(fd);
+	if (fd == BT::Defaults::BadFD) 
+		throw BadSocketDescriptor();
 }
 
 BT::Peer_t::Peer_t(std::string const& ip, unsigned int const& port)
-	: sockfd(BT::Defaults::BadSocketFD), ip(ip), port(port), id(calculateId(ip, port)) {
+	: Peer_t(BT::Defaults::BadFD, ip, port) 
+{}
+
+BT::Peer_t::Peer_t(Peer_t const& otherPeer)
+	: ip(otherPeer.ip), 
+	  port(otherPeer.port),
+	  id(otherPeer.id) 
+{
+	if (sockfd != BT::Defaults::BadFD)
+		close(sockfd);
+
+	sockfd = dup(otherPeer.sockfd);
+	if (sockfd == BT::Defaults::BadFD)
+		throw BadSocketDescriptor();
 }
 
 BT::Peer_t::Peer_t(BT::Peer_t&& otherPeer) 
-	: sockfd(otherPeer.getSockfd()), ip(std::move(otherPeer.getIp())), 
-	port(otherPeer.getPort()), id(std::move(otherPeer.getId())) {
-	otherPeer.reset();
+	: sockfd(BT::Defaults::BadFD)
+{
+	swap(*this, otherPeer);
 }
 
-BT::Peer_t& BT::Peer_t::operator=(BT::Peer_t otherPeer) {
-	this->sockfd = otherPeer.getSockfd();
-	this->ip = otherPeer.getIp();
-	this->port = otherPeer.getPort();
-	this->id = otherPeer.getId();
-
-	otherPeer.reset();
+BT::Peer_t& BT::Peer_t::operator=(BT::Peer_t otherPeer) 
+{
+	std::swap(*this, otherPeer);
 	return *this;
 }
 
-void BT::Peer_t::reset() {
-	this->sockfd = -1;
-	this->ip = "";
-	this->port = 0;
-	this->id = "";
+void BT::swap(BT::Peer_t& first, BT::Peer_t& second)
+{
+	std::swap(first.sockfd, second.sockfd);
+	std::swap(first.ip, second.ip);
+	std::swap(first.port, second.port);
+	std::swap(first.id, second.id);
 }
 
-void BT::Peer_t::receive(void *buf, unsigned int const count) const {
+BT::Peer_t::~Peer_t() 
+{
+	if (sockfd != BT::Defaults::BadFD)
+		close(sockfd);
+	sockfd = BT::Defaults::BadFD;
+}
+
+void BT::Peer_t::Reset() 
+{
+	if (sockfd != BT::Defaults::BadFD)
+		close(sockfd);
+
+	sockfd = BT::Defaults::BadFD;
+	ip = "";
+	port = 0;
+	id = "";
+}
+
+void BT::Peer_t::EstablishConnectionTo(Peer_t const& otherPeer) {
+	sockfd = BT::Defaults::BadFD;
+
+	int tmpSockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	if (tmpSockfd < 0)
+		return;
+
+	sockaddr_in serv_addr;
+	memset((void *)&serv_addr, 0, sizeof(serv_addr));
+	serv_addr.sin_family = AF_INET;
+	serv_addr.sin_addr.s_addr = inet_addr(otherPeer.ip.c_str());
+	serv_addr.sin_port = htons(otherPeer.port);
+
+	if (connect(tmpSockfd, (sockaddr*)&serv_addr, sizeof(serv_addr)) != 0)
+		return;
+
+	sockaddr_in cli_addr;
+	socklen_t len = BT::Defaults::IPSize - 1;
+
+	if (getsockname(tmpSockfd, (sockaddr*)&cli_addr, &len) == -1)
+		return;
+
+	char buffer[BT::Defaults::IPSize] = "";
+	inet_ntop(cli_addr.sin_family, (void *)&cli_addr.sin_addr, buffer, BT::Defaults::IPSize - 1);
+
+	sockfd = tmpSockfd;
+	ip = std::string(buffer);
+	port = ntohs(cli_addr.sin_port);
+	id = CalculateId(ip, port);
+}
+
+void BT::Peer_t::Receive(void *buf, unsigned int const count) const {
 	memset(buf, 0, count);
 	makeSocketNonBlockable(sockfd);
 
@@ -268,16 +411,15 @@ void BT::Peer_t::receive(void *buf, unsigned int const count) const {
 
 		time_t end = time(0);
 		if (difftime(end, beg) > 2 * 60)
-			throw UnExpectedMessageException();
+			throw UnExpectedMessage();
 	}
 }
 
-void BT::Peer_t::send(void const * const buf, unsigned int const count) const {
+void BT::Peer_t::Send(void const * const buf, unsigned int const count) const {
 	write(sockfd, buf, count);
 }
 
-BT::Message_t const BT::Peer_t::receiveMessage(BT::Message_t::MessageType const msgType) const {
-	std::function<Message_t const(Peer_t const&)> fh;
+BT::Message_t const BT::Peer_t::ReceiveMessage(BT::Message_t::MessageType const msgType) const {
 	std::map<Message_t::MessageType, std::function<Message_t const(Peer_t const&)>> handlers;
 
 	handlers[Message_t::MessageType::CHOKE] = receiveSpecificMessage<Message_t::MessageType::CHOKE>;
@@ -291,11 +433,11 @@ BT::Message_t const BT::Peer_t::receiveMessage(BT::Message_t::MessageType const 
 	handlers[Message_t::MessageType::CANCEL] = receiveSpecificMessage<Message_t::MessageType::CANCEL>;
 
 	auto itr = handlers.find(msgType);
-	if (itr == handlers.end()) throw UnExpectedMessageException();
+	if (itr == handlers.end()) throw UnExpectedMessage();
 	return itr->second(*this);		
 }
 
-void BT::Peer_t::sendMessage(BT::Message_t const& msg) const {
+void BT::Peer_t::SendMessage(BT::Message_t const& msg) const {
 	std::map<Message_t::MessageType, std::function<void(Peer_t const& peer, BT::Message_t const&)>> handlers;
 
 	handlers[Message_t::MessageType::CHOKE] = sendSpecificMessage<Message_t::MessageType::CHOKE>;
@@ -309,13 +451,10 @@ void BT::Peer_t::sendMessage(BT::Message_t const& msg) const {
 	handlers[Message_t::MessageType::CANCEL] = sendSpecificMessage<Message_t::MessageType::CANCEL>;
 
 	auto itr = handlers.find(msg.getType());
-	if (itr == handlers.end()) throw UnExpectedMessageException();
+	if (itr == handlers.end()) throw UnExpectedMessage();
 	itr->second(*this, msg);
 }
 
-BT::Peer_t::~Peer_t() {
-	auto sockfd = getSockfd();
-	if (sockfd > 0)
-		close(sockfd);
+std::ostream& BT::operator<<(std::ostream& os, BT::Peer_t const& peer) {
+	os << peer.id << "        " << peer.ip << ":" << peer.port;
 }
-
