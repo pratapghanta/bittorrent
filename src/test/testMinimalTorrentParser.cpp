@@ -30,7 +30,7 @@ namespace BT { namespace Test {
         Metainfo_t info;
 
         parser.Parse(strFileName, info);
-        EXPECT_EQ(info.mData["key"].value.nInt, std::stol(param.second));
+        EXPECT_EQ((info.mData["key"]).GetInt(), std::stol(param.second));
     }
 
     std::map<std::string, std::string> positiveValue {

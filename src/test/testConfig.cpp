@@ -6,7 +6,6 @@
 #include <string>
 
 #include "Config.hpp"
-#include "ConfigExceptions.hpp"
 
 #if 0
 namespace {

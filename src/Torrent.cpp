@@ -7,22 +7,24 @@
 #include "MinimalTorrentParser.hpp"
 
 namespace BT {
-	Torrent_t::Torrent_t(/* IN */  std::string const& torrent,
+	Torrent_t::Torrent_t(/* IN  */ std::string const& torrent,
 	                     /* OUT */ STATUSCODE& rStatus)
-			: mFileLength(0), mNumOfPieces(0), mPieceLength(0) {
+			: mFileLength(0),
+			  mNumOfPieces(0),
+			  mPieceLength(0) {
 		Metainfo_t mi;
 		MinimalTorrentParser_t().Parse(torrent, mi);
-		MI_DictPtr_t const infoDict = ((mi.mData)["info"]).Get<MI_DictPtr_t>();
+		MI_DictPtr_t const infoDict = ((mi.mData)["info"]).GetDictPtr();
 
 		mFilename = torrent;
-		mName = ((*infoDict)["name"]).Get<MI_String_t>();
-		mFileLength = ((*infoDict)["length"]).Get<MI_Int_t>();
-		mPieceLength = ((*infoDict)["piece length"]).Get<MI_Int_t>();
+		mName = ((*infoDict)["name"]).GetString();
+		mFileLength = ((*infoDict)["length"]).GetInt();
+		mPieceLength = ((*infoDict)["piece length"]).GetInt();
 		mNumOfPieces = static_cast<unsigned int>((mFileLength <= mPieceLength) ? 
 													1 :
 													ceil(mFileLength * 1.0 / mPieceLength));
 
-		std::string const& hashesOfAllPieces = ((*infoDict)["pieces"]).Get<MI_String_t>();
+		std::string const& hashesOfAllPieces = ((*infoDict)["pieces"]).GetString();
 		if (mNumOfPieces != (hashesOfAllPieces.length() / BT::Defaults::Sha1MdSize)) {
 			rStatus = STATUSCODE::SC_FAIL_BAD_TORRENT;
 			Reset();

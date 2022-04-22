@@ -35,8 +35,8 @@ namespace BT {
 
     MinimalTorrentParser_t::MinimalTorrentParser_t(/* IN */ MinimalTorrentParser_t&& mtp)
         : mInfoDict(false),
-	      mStartInfoDict(0),
-	      mEndInfoDict(0) {
+          mStartInfoDict(0),
+          mEndInfoDict(0) {
         *this = std::move(mtp);
     }
 
@@ -44,7 +44,7 @@ namespace BT {
     MinimalTorrentParser_t& MinimalTorrentParser_t::operator=(/* IN */ MinimalTorrentParser_t&& mtp) {
         if (this != &mtp) {
             if (mIfstream.is_open())
-	        mIfstream.close();            
+                mIfstream.close();            
             mIfstream = std::move(mtp.mIfstream);
             mInfoDict = mtp.mInfoDict;
             mStartInfoDict = mtp.mStartInfoDict;
@@ -82,14 +82,14 @@ namespace BT {
         }
 
         MI_Object_t bcDict = extract_MI_Dict();
-        rInfo.mData = *(bcDict.Get<MI_DictPtr_t>()); 
+        rInfo.mData = *(bcDict.GetDictPtr()); 
         return computeInfoDictHash(rInfo.mInfoHash);
     }
 
 
     STATUSCODE MinimalTorrentParser_t::openFile(/* IN */ std::string const& strFileName) const {
-    	if (mIfstream.is_open())
-    		mIfstream.close();
+        if (mIfstream.is_open())
+            mIfstream.close();
 
         mIfstream.open(strFileName.c_str());
         if (!mIfstream.is_open()) {
@@ -102,14 +102,14 @@ namespace BT {
 
 
     STATUSCODE MinimalTorrentParser_t::computeInfoDictHash(/* OUT */ std::string& rHash) const {
-    	rHash.clear();
+        rHash.clear();
 
-    	if (!mIfstream.is_open() || 
+        if (!mIfstream.is_open() || 
             mEndInfoDict < mStartInfoDict || 
             mEndInfoDict - mStartInfoDict + 1 >= BT::Defaults::MaxBufferSize ) {
-    		Error("Unable to compute hash value for Info dictionary.");
-    		return STATUSCODE::SC_FAIL_UNKNOWN;
-    	}
+            Error("Unable to compute hash value for Info dictionary.");
+            return STATUSCODE::SC_FAIL_UNKNOWN;
+        }
 
         char buffer[BT::Defaults::MaxBufferSize] = "";
         mIfstream.seekg(mStartInfoDict);
@@ -160,9 +160,7 @@ namespace BT {
             value = 0;
         }
 
-        MI_Object_t obj;
-        obj.Set<>(static_cast<BT::MI_Int_t>(value));
-        return obj;
+        return MI_Object_t(static_cast<MI_Int_t>(value));
     }
 
 
@@ -189,9 +187,7 @@ namespace BT {
                 buffer[i] = '_';
         buffer[strLen] = '\0';
 
-        BT::MI_Object_t obj;
-        obj.Set<>(static_cast<BT::MI_String_t>(std::string(buffer)));
-        return obj;
+        return BT::MI_Object_t(static_cast<MI_String_t>(std::string(buffer)));
     }
 
     /* Format: l<contents>e */
@@ -213,9 +209,7 @@ namespace BT {
             data->push_back(extractData(ch));
         }
 
-        BT::MI_Object_t obj;
-        obj.Set<>(data);
-        return obj;
+        return BT::MI_Object_t(data);
     }
 
     /* Format: d<contents>e */
@@ -239,7 +233,7 @@ namespace BT {
 
         while (true) {
             BT::MI_Object_t keyObj = extract_MI_String();
-            BT::MI_String_t key = keyObj.Get<MI_String_t>();
+            BT::MI_String_t key = keyObj.GetString();
 
             if (0 == key.compare("info")) {
                 mInfoDict = true;
@@ -263,9 +257,7 @@ namespace BT {
             }
         }
 
-        BT::MI_Object_t obj;
-        obj.Set<>(data);
-        return obj;
+        return BT::MI_Object_t(data);
     }
 
     BT::MI_Object_t MinimalTorrentParser_t::extractData(char ch) const {
