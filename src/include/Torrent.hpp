@@ -12,9 +12,18 @@ namespace BT {
 	
 	class Torrent_t {
 	public:
+		Torrent_t() = default;
 		Torrent_t(/* IN */  std::string const& filename,
 		          /* OUT */ STATUSCODE& rStatus);
 		
+		Torrent_t(Torrent_t const&) = default;
+		Torrent_t& operator=(Torrent_t const&) = default;
+
+		Torrent_t(Torrent_t&&) = default;
+		Torrent_t& operator=(Torrent_t&&) = default;
+
+		~Torrent_t() = default;
+
 		void Reset();
 
 		std::string const&  GetName() const { return mName; }

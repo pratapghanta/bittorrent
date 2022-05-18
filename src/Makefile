@@ -29,13 +29,15 @@ SRC_LIB         = $(SRC_LIBDIR)/lib$(PROJECT_NAME).a
 SRC_RUN         = $(SRC_BINDIR)/$(PROJECT_NAME)
 
 SRC_CXXFLAGS    = -Wall -std=c++11 -I$(SRC_INCLUDEDIR) -I$(OPENSSL_INCLUDE)
-SRC_LIBFLAGS    = $(SRC_LIB) -L$(OPENSSL_LIBDIR) -lssl -lcrypto
+SRC_LIBFLAGS    = $(SRC_LIB) -L$(OPENSSL_LIBDIR) -lssl -lcrypto -lpthread
 SRC_CXXFLAGS    = -Wall -std=c++17 -I$(SRC_INCLUDEDIR)
-ifeq ($(BUILD_CONFIG), "debug")
-$(SRC_CXXFLAGS) = -g -D_DEBUG $(SRC_CXXFLAGS)
+
+ifeq ("x$(BUILD_CONFIG)", "xdebug")
+	SRC_CXXFLAGS := -g -D_DEBUG $(SRC_CXXFLAGS)
 endif
 
-SRC_FILES       = Config.cpp               \
+SRC_FILES       = StartParams.cpp          \
+				  AppConductor.cpp         \
 				  helpers.cpp              \
 				  Leecher.cpp              \
 				  LeecherHandler.cpp       \
@@ -62,14 +64,13 @@ TEST_OBJDIR     = $(TEST_DIR)/$(BUILD_CONFIG)/obj
 TEST_RUN        = $(TEST_BINDIR)/test_$(PROJECT_NAME)
 
 TEST_LIBFLAGS   = $(GTEST_LIBFLAGS) $(SRC_LIBFLAGS)
-TEST_CXXFLAGS   = $(SRC_CXXFLAGS) $(GTEST_CXXFLAGS) -I$(SRC_INCLUDEDIR) -I$(TEST_DIR) -I$(TEST_INCLUDEDIR) 
-ifeq ($(BUILD_CONFIG), "debug")
-$(TEST_CXXFLAGS) = -g -D_DEBUG $(TEST_CXXFLAGS)
+TEST_CXXFLAGS   = $(SRC_CXXFLAGS) $(GTEST_CXXFLAGS) -I$(SRC_INCLUDEDIR) -I$(TEST_DIR) -I$(TEST_INCLUDEDIR)
+
+ifeq ("x$(BUILD_CONFIG)","xdebug")
+	TEST_CXXFLAGS := -g -D_DEBUG $(TEST_CXXFLAGS)
 endif
 
 TEST_FILES      = main.cpp                     \
-				  testConfig.cpp               \
-				  testMessage.cpp              \
 				  testMinimalTorrentParser.cpp 
 
 TEST_OBJS       = $(patsubst %.cpp, %.o, $(TEST_FILES))

@@ -34,13 +34,17 @@ namespace BT { namespace Test {
     }
 
     std::map<std::string, std::string> positiveValue {
-        // { "empty", "" },
-        // { "negative", "-1" },
-        // { "zero", "0" },
+        { "negative", "-1" },
+        { "zero", "0" },
         { "positive", "1" },
-        // { "signed", "+1" },
-        // { "decimal", "1.23" }
+        { "signed", "+1" },
+        { "decimal", "1.23" }
     };
+
+    std::map<std::string, std::string> negativeValues {
+        { "empty", "" }
+    };
+
     INSTANTIATE_TEST_SUITE_P(positiveValues,
                              TestMinimalTorrentParser,
                              testing::ValuesIn(positiveValue));

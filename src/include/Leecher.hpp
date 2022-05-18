@@ -4,13 +4,13 @@
 #include <vector>
 
 #include "Peer.hpp"
-#include "Config.hpp"
+#include "StartParams.hpp"
 #include "Torrent.hpp"
 
 namespace BT {
 	class Leecher_t {
 	public:
-		Leecher_t(BT::Torrent_t const& t, Peer_t const& seeder);
+		Leecher_t(BT::Torrent_t const t, Peer_t const& seeder);
 		void startTransfer();
 
 	private:

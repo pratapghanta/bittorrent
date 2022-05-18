@@ -45,7 +45,7 @@ namespace {
 	}
 }
 
-BT::Leecher_t::Leecher_t(BT::Torrent_t const& t, Peer_t const& s)
+BT::Leecher_t::Leecher_t(BT::Torrent_t const t, Peer_t const& s)
 	: torrent(t), 
 	  seeder(s) 
 {

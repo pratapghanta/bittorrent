@@ -4,7 +4,7 @@
 #include "MinimalTorrentParser.hpp"
 #include "Logger.hpp"
 #include "Defaults.hpp"
-#include "Config.hpp"
+#include "StartParams.hpp"
 #include "helpers.hpp"
 
 /* TODO: Add exception safety */
@@ -146,6 +146,13 @@ namespace BT {
         mIfstream.get(buffer, BT::Defaults::MaxBufferSize, delim);
         rOut = std::stol(buffer);
 
+        char ch = '\0';
+        STATUSCODE status = extractChar(ch);
+        if (SC_FAILED(status) || ch != delim) {
+            Error("EOF while reading integer from the torrent file.");
+            return STATUSCODE::SC_FAIL_BAD_TORRENT;
+        }
+
         return STATUSCODE::SC_SUCCESS;
     }
 
@@ -179,7 +186,7 @@ namespace BT {
             buffer[0] = '\0';
         }
         else
-            mIfstream.get(buffer, strLen);
+            mIfstream.get(buffer, strLen+1);
 
         /* Special processing to remove the '\0' char within the string */
         for (int i = 0; i < strLen; i++)

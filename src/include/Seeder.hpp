@@ -3,7 +3,7 @@
 
 #include <vector>
 
-#include "Config.hpp"
+#include "StartParams.hpp"
 #include "Torrent.hpp"
 #include "Peer.hpp"
 
@@ -11,15 +11,22 @@ namespace BT {
 	class Seeder_t {
 	public:
 		Seeder_t(Torrent_t const& t, unsigned int const p);
+
+		Seeder_t(Seeder_t const&) = delete;
+		Seeder_t& operator=(Seeder_t const&) = delete;
+
+		Seeder_t(Seeder_t&&);
+		Seeder_t& operator=(Seeder_t&&);
+
 		~Seeder_t();
 
-		unsigned int const getPort() const { return port; }
-		void startTransfer();
+		unsigned int const GetPort() const { return port; }
+		void StartTransfer();
 
 	private:
 		int sockfd;
-		Torrent_t const& torrent;
-		unsigned int const port;
+		Torrent_t torrent;
+		unsigned int port;
 
 		class LeecherHandler_t;
 		std::vector<LeecherHandler_t> leecherHandlers;
@@ -28,7 +35,7 @@ namespace BT {
 	class Seeder_t::LeecherHandler_t {
 	public:
 		LeecherHandler_t(BT::Torrent_t const& t, Peer_t& seeder, Peer_t& leecher);
-		void doTransfer(void);
+		void StartTransfer();
 
 	private:
 		bool const communicatePortocolMessages();

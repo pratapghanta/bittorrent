@@ -56,13 +56,13 @@ namespace BT {
     };
 
     struct Metainfo_t {
-        MI_Dict_t mData;
-        std::string  mInfoHash;
-    
         void Reset() {
             mData.clear();
             mInfoHash.clear();
         }
+
+        MI_Dict_t mData;
+        std::string  mInfoHash;
     };
 }
 #endif // !defined(METAINFO_HPP)

@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <cstring>
+#include <thread>
 #include <unistd.h>
 #include <netinet/in.h>
 #include <netinet/ip.h> 
@@ -10,93 +11,123 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <signal.h>
-#include <pthread.h>
 #include <openssl/sha.h>
 
 #include "Seeder.hpp"
 #include "Peer.hpp"
 #include "Defaults.hpp"
 #include "helpers.hpp"
+#include "Logger.hpp"
 
 using namespace std;
 
 namespace {
-	int const createServerSocket(unsigned int const port) {
+	int const createServerSocket() {
 		int sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP); /* TCP */
 		if (sockfd == BT::Defaults::BadFD)
 			ThrowErrorAndExit("Socket creation failed.");
+		return sockfd;
+	}
 
+	void bindServerSocket(int sockfd, unsigned int const port) {
 		sockaddr_in server_addr;
-		memset((void *)&server_addr, 0, sizeof(server_addr));
+		memset((void*) &server_addr, 0, sizeof(server_addr));
 		server_addr.sin_family = AF_INET; /* IPV4 */
 		server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
 		server_addr.sin_port = htons(port);
 
-		if (::bind(sockfd, (sockaddr *)& server_addr, sizeof(server_addr)) != 0)
+		if (::bind(sockfd, (sockaddr*) &server_addr, sizeof(server_addr)) != 0)
 			ThrowErrorAndExit("Socket binding failed.");
-
-		return sockfd;
 	}
 
 	std::string getIPFromSockAddr(sockaddr_in const& addr) {
 		char ip[BT::Defaults::IPSize] = "";
-		
-		inet_ntop(addr.sin_family, (void *)&addr.sin_addr, ip, BT::Defaults::IPSize);
-		
+		inet_ntop(addr.sin_family, (void*) &addr.sin_addr, ip, BT::Defaults::IPSize);
 		return std::string(ip);
 	}
 
 	std::string getSeederIP(int const sockfd) {
 		sockaddr_in sin;		
-		memset((void *)&sin, 0, sizeof(sin));
+		memset((void*) &sin, 0, sizeof(sin));
 
 		socklen_t len = sizeof(sockaddr_in);
-
-		if (getsockname(sockfd, (sockaddr *)&sin, &len) != -1)
+		if (getsockname(sockfd, (sockaddr*) &sin, &len) != -1)
 			return getIPFromSockAddr(sin);
 
 		ThrowErrorAndExit("Unable to get seeder IP.");
-		return std::string(""); // Unreachable. Might not have RVO :(
+		return std::string(""); // Unreachable code. Might not have RVO :(
 	}
 }
 
-BT::Seeder_t::Seeder_t(Torrent_t const& t, unsigned int const p) : sockfd(BT::Defaults::BadFD), torrent(t), port(p) {
-	leecherHandlers.reserve(BT::Defaults::MaxConnections);
-}
+namespace BT {
+	Seeder_t::Seeder_t(Torrent_t const& t, unsigned int const p) 
+		: sockfd(Defaults::BadFD), torrent(t), port(p) {
+		leecherHandlers.reserve(Defaults::MaxConnections);
+	}
 
-void BT::Seeder_t::startTransfer(void) {
-    sockfd = createServerSocket(port);
-	std::string const& seederIP = getSeederIP(sockfd);
-	
-	listen(sockfd, BT::Defaults::MaxConnections);
+	Seeder_t::Seeder_t(Seeder_t&& obj)
+		: sockfd (obj.sockfd),
+		  torrent(obj.torrent),
+		  port(obj.port) {
+		obj.sockfd = BT::Defaults::BadFD;
+		obj.port = 0;
+	}
 
-    unsigned int nPeers = 0;
-    while(nPeers < BT::Defaults::MaxConnections) {
-		sockaddr_in client_addr;
-        socklen_t clilen = sizeof(client_addr);
+	Seeder_t& Seeder_t::operator=(Seeder_t&& obj) {
+		if (&obj == this)
+			return *this;
 
-        int leecherfd = accept(sockfd, (sockaddr *) &client_addr, &clilen);
-		if (leecherfd == BT::Defaults::BadFD)
-			ThrowErrorAndExit("Unable to connect to leecher");
+		if (sockfd > 0)
+			close(sockfd);
 
-		nPeers++;
+		sockfd = obj.sockfd;
+		torrent = obj.torrent;
+		port = obj.port;
 
-    	std::string const& leecherIP = getIPFromSockAddr(client_addr);
-        unsigned int leecherPort = ntohs(client_addr.sin_port);
-        
-		Peer_t leecher(leecherfd, leecherIP, leecherPort);
-		Peer_t seeder(BT::Defaults::BadFD, seederIP, port); /* hack */
+		obj.sockfd = BT::Defaults::BadFD;
+		obj.port = 0;
 
-		LeecherHandler_t lh(torrent, seeder, leecher);
-		leecherHandlers.push_back(std::move(lh));
-        /* (*leecherHandler[nPeers]).transfer(); */
-        /* thread sth(&LeecherHandler::transfer, (*leecherHandler[nPeers])); */ /* ??????? */
-                                            /* Start a thread for handlind the leecher ? */
-                                            /* What is this stupid syntax ?              */
-    }
-}
+		return *this;
+	}
 
-BT::Seeder_t::~Seeder_t() {
-	if (sockfd > 0)
-		close(sockfd);
+	Seeder_t::~Seeder_t() {
+		if (sockfd > 0)
+			close(sockfd);
+	}
+
+	void Seeder_t::StartTransfer() {
+		unsigned int maxThreadsPossible = std::thread::hardware_concurrency();
+		if (maxThreadsPossible != 0 && maxThreadsPossible < Defaults::MaxConnections) {
+			Warn("Using less leechers is recommended. Max concurrent threads supported = %u", maxThreadsPossible);
+		}
+		
+		sockfd = createServerSocket();
+		bindServerSocket(sockfd, port);
+
+		listen(sockfd, Defaults::MaxConnections);
+
+		std::string const& seederIP = getSeederIP(sockfd);
+		unsigned int nPeers = 0;
+		while(nPeers < Defaults::MaxConnections) {
+			sockaddr_in client_addr;
+			socklen_t clilen = sizeof(client_addr);
+
+			int leecherfd = accept(sockfd, (sockaddr *) &client_addr, &clilen);
+			if (leecherfd == Defaults::BadFD)
+				ThrowErrorAndExit("Unable to connect to leecher.");
+
+			nPeers++;
+
+			std::string const& leecherIP = getIPFromSockAddr(client_addr);
+			unsigned int leecherPort = ntohs(client_addr.sin_port);
+			
+			Peer_t leecher(leecherfd, leecherIP, leecherPort);
+			Peer_t seeder(Defaults::BadFD, seederIP, port); // hack
+
+			LeecherHandler_t lh(torrent, seeder, leecher);
+			leecherHandlers.push_back(std::move(lh));
+			
+			std::thread sth([&]() { leecherHandlers[nPeers-1].StartTransfer(); });
+		}
+	}
 }

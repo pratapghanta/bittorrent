@@ -36,10 +36,10 @@ namespace {
 }
 
 namespace BT {
-    #define Trace(formatStr, ...) log(LogType::LT_TRACE, formatStr, ##__VA_ARGS__)
-    #define Info(formatStr, ...) log(LogType::LT_INFO, formatStr, ##__VA_ARGS__)
-    #define Warn(formatStr, ...) log(LogType::LT_WARN, formatStr, ##__VA_ARGS__)
-    #define Error(formatStr, ...) log(LogType::LT_ERROR, formatStr, ##__VA_ARGS__)
+    #define Trace(formatStr, ...) ::log(LogType::LT_TRACE, formatStr, ##__VA_ARGS__)
+    #define Info(formatStr, ...)  ::log(LogType::LT_INFO, formatStr, ##__VA_ARGS__)
+    #define Warn(formatStr, ...)  ::log(LogType::LT_WARN, formatStr, ##__VA_ARGS__)
+    #define Error(formatStr, ...) ::log(LogType::LT_ERROR, formatStr, ##__VA_ARGS__)
 }
 
 #endif // #ifndef LOGGER_HPP

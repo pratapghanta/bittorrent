@@ -62,7 +62,7 @@ bool const BT::Seeder_t::LeecherHandler_t::communicatePortocolMessages(void) {
 	return inSameSwarm() && isExpectedHost();
 }
 
-void BT::Seeder_t::LeecherHandler_t::doTransfer(void) {
+void BT::Seeder_t::LeecherHandler_t::StartTransfer(void) {
 	if (!communicatePortocolMessages())
 		return;
 

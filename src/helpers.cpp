@@ -11,20 +11,6 @@ void ThrowErrorAndExit(std::string const& errorMsg) {
 	exit(-1);
 }
 
-std::string const GetHelpMesssage() {
-	return std::string(
-		"bittorrent [OPTIONS] file.torrent\n"
-		"  -h            \t Print the help screen\n"
-		"  -b port       \t Bind to this port for incoming connections\n"
-		"  -s save_file  \t Save the torrent in directory save_dir (dflt: .)\n"
-		"  -l log_file   \t Save logs to log_file (dflt: bt_client.log)\n"
-		"  -p ip:port    \t Instead of contacting the tracker for a peer list,\n"
-		"                \t use this peer instead, ip:port (ip or hostname)\n"
-		"                \t (include multiple -p for more than 1 peer)\n"
-		"  -I id         \t Set the node identifier to id (dflt: random)\n"
-		"  -v            \t verbose, print additional verbose info\n");
-}
-
 std::string const CalculateId(std::string const& ip, unsigned int const& port) {
 	std::ostringstream oss;
 	oss << ip << port;
