@@ -1,6 +1,6 @@
 #include <cstring>
 
-#include "Message.hpp"
+#include "peer/Message.hpp"
 
 BT::Piece_t::Piece_t() : index(0), begin(0), piece(nullptr) {}
 

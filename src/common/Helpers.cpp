@@ -3,8 +3,8 @@
 #include <string>
 #include <openssl/sha.h>
 
-#include "Defaults.hpp"
-#include "helpers.hpp"
+#include "common/Defaults.hpp"
+#include "common/Helpers.hpp"
 
 void ThrowErrorAndExit(std::string const& errorMsg) {
 	std::cerr << "ERROR: " << errorMsg << std::endl;

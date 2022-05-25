@@ -2,8 +2,8 @@
 #include <fstream>
 
 #include "gtest/gtest.h"
-#include "MinimalTorrentParser.hpp"
-#include "Metainfo.hpp"
+#include "torrent/Metainfo.hpp"
+#include "torrent/MinimalTorrentParser.hpp"
 
 namespace BT { namespace Test {
     using ValueParameter_t = std::map<std::string, std::string>::value_type;

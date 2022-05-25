@@ -1,14 +1,14 @@
+#include "peer/Leecher.hpp"
+#include "peer/Seeder.hpp"
 #include "AppConductor.hpp"
-#include "Seeder.hpp"
-#include "Leecher.hpp"
 
 namespace BT {
-    AppConductor_t::AppConductor_t(StartParams_t const& p)
+    AppConductor_t::AppConductor_t(CStartParams const& p)
                 : mParams(p) {}
 
     void AppConductor_t::Start() const {
         if (mParams.helpRequested) {
-            std::cout << StartParams_t::GetHelpMesssage() << std::endl;
+            std::cout << CStartParams::GetHelpMesssage() << std::endl;
             return;
         }
 

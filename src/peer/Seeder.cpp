@@ -13,11 +13,11 @@
 #include <signal.h>
 #include <openssl/sha.h>
 
-#include "Seeder.hpp"
-#include "Peer.hpp"
-#include "Defaults.hpp"
-#include "helpers.hpp"
-#include "Logger.hpp"
+#include "common/Defaults.hpp"
+#include "common/Helpers.hpp"
+#include "common/Logger.hpp"
+#include "peer/Peer.hpp"
+#include "peer/Seeder.hpp"
 
 using namespace std;
 

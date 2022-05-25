@@ -4,10 +4,9 @@
 #include <csignal>
 #include <unistd.h>
 
-#include "StartParams.hpp"
+#include "common/Helpers.hpp"
 #include "AppConductor.hpp"
-#include "helpers.hpp"
-#include "Errors.hpp"
+#include "StartParams.hpp"
 
 namespace {
 	void handleInterruptSignal() {
@@ -33,7 +32,7 @@ namespace {
 int main (int argc, char * argv[]) {
 	handleInterruptSignal();
 
-	BT::StartParams_t const params(getVectorOfStrings(argc, argv));
+	BT::CStartParams const params(getVectorOfStrings(argc, argv));
 	BT::AppConductor_t const ac(params);
 	ac.Start();
 

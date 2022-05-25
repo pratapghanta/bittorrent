@@ -3,9 +3,9 @@
 
 #include <vector>
 
+#include "peer/Peer.hpp"
+#include "torrent/Torrent.hpp"
 #include "StartParams.hpp"
-#include "Torrent.hpp"
-#include "Peer.hpp"
 
 namespace BT {
 	class Seeder_t {

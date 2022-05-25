@@ -3,9 +3,9 @@
 
 #include <vector>
 
-#include "Peer.hpp"
+#include "peer/Peer.hpp"
+#include "torrent/Torrent.hpp"
 #include "StartParams.hpp"
-#include "Torrent.hpp"
 
 namespace BT {
 	class Leecher_t {

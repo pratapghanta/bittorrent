@@ -7,12 +7,12 @@
 #include <unistd.h>
 #include <openssl/sha.h>
 
+#include "common/Defaults.hpp"
+#include "common/Errors.hpp"
+#include "common/Helpers.hpp"
+#include "peer/Leecher.hpp"
+#include "peer/Seeder.hpp"
 #include "StartParams.hpp"
-#include "Seeder.hpp"
-#include "Leecher.hpp"
-#include "Defaults.hpp"
-#include "helpers.hpp"
-#include "Errors.hpp"
 
 namespace 
 {
@@ -24,50 +24,50 @@ namespace
     std::string const option_id = "-I";
     std::string const option_verbose = "-v";
 
-    struct BadOption : BT::BTException 
+    struct BadOption : BT::CException 
     {
         BadOption (std::string const& option)
-            : BT::BTException("Bad option: " + option,
+            : BT::CException("Bad option: " + option,
                               "Use -h for help.") 
         {}
     };
 
-    struct PeerLimitExceeded : BT::BTException 
+    struct PeerLimitExceeded : BT::CException 
     {
         PeerLimitExceeded(int const peerLimit)
-            : BT::BTException("Exceeded peer limit.",
+            : BT::CException("Exceeded peer limit.",
                               "Max number of peers = " + std::to_string(peerLimit))
         {}
     };
 
-    struct TorrentFileMissing : BT::BTException 
+    struct TorrentFileMissing : BT::CException 
     {
         TorrentFileMissing ()
-            : BT::BTException("Torrent file missing.",
+            : BT::CException("Torrent file missing.",
                               "Use -h for help.") 
         {}
     };
 
-    struct InvalidPeerExpression : BT::BTException 
+    struct InvalidPeerExpression : BT::CException 
     {
         InvalidPeerExpression(std::string const& peerStr) 
-            : BT::BTException("Incorrect Peer description: " + peerStr,
+            : BT::CException("Incorrect Peer description: " + peerStr,
                               "Specify the peer using ip:port format.")
         {}
     };
 
-    struct InvalidIPAddress : BT::BTException 
+    struct InvalidIPAddress : BT::CException 
     {
         InvalidIPAddress(std::string const& ipStr) 
-            : BT::BTException("Invalid Peer's address: " + ipStr,
+            : BT::CException("Invalid Peer's address: " + ipStr,
                               "Peer's address must be a valid IPv4 address.")
         {}
     };
 
-    struct InvalidPortNumber : BT::BTException 
+    struct InvalidPortNumber : BT::CException 
     {
         InvalidPortNumber(std::string const& port) 
-            : BT::BTException("Invalid Peer's port: " + port,
+            : BT::CException("Invalid Peer's port: " + port,
                               "Reserved ports (0-1023) are not accepted. Use ephemeral ports (1024-65535).")
         {}
     };
@@ -149,7 +149,7 @@ namespace
 
 namespace BT 
 {
-    std::ostream& operator<<(std::ostream& os, StartParams_t const& params) 
+    std::ostream& operator<<(std::ostream& os, CStartParams const& params) 
     {
         printDefaults(os);
 
@@ -173,7 +173,7 @@ namespace BT
         return os;
     }
 
-    std::string StartParams_t::GetHelpMesssage() {
+    std::string CStartParams::GetHelpMesssage() {
         return std::string(
             "bittorrent [OPTIONS] file.torrent\n"
             "  -h            \t Print the help screen\n"
@@ -187,23 +187,23 @@ namespace BT
             "  -v            \t verbose, print additional verbose info\n");
     }
 
-    bool StartParams_t::IsSeeder() const {
+    bool CStartParams::IsSeeder() const {
         return peers.empty();
     }
 
-    void StartParams_t::throwException(std::exception const& e) const 
+    void CStartParams::throwException(std::exception const& e) const 
     {
         if (!helpRequested)
             throw e;
     }
 
-    void StartParams_t::initFlagOptionHandlers() 
+    void CStartParams::initFlagOptionHandlers() 
     {
         flagOptionHandler[option_help] = [&]() { helpRequested = true; };
         flagOptionHandler[option_verbose] = [&]() { enableVerbose = true; };
     }
 
-    void StartParams_t::initKeyValueOptionsHandlers() 
+    void CStartParams::initKeyValueOptionsHandlers() 
     {
         keyValueOptionHandler[option_savefile] = [&](std::string const& value) { saveFilename = value; };
         keyValueOptionHandler[option_savefile] = [&](std::string const& value) { logFilename = value; };
@@ -223,13 +223,13 @@ namespace BT
         };
     }
 
-    void StartParams_t::initOptionHandlers() 
+    void CStartParams::initOptionHandlers() 
     {
         initFlagOptionHandlers();
         initKeyValueOptionsHandlers();
     }
 
-    void StartParams_t::parseOptions(std::vector<std::string> const& options,
+    void CStartParams::parseOptions(std::vector<std::string> const& options,
                                 bool const skipKeyValueOptions)
     {
         for (unsigned int i = 0; i < options.size(); i++)
@@ -266,7 +266,7 @@ namespace BT
             saveFilename = torrentFilename;
     }
 
-    bool StartParams_t::isFlagOption(std::string const& option) const 
+    bool CStartParams::isFlagOption(std::string const& option) const 
     {
         for (auto itr = flagOptionHandler.cbegin(); itr != flagOptionHandler.cend(); ++itr)
             if (itr->first == option)
@@ -274,7 +274,7 @@ namespace BT
         return false;
     }
 
-    bool StartParams_t::isKeyValueOption(std::string const& option) const 
+    bool CStartParams::isKeyValueOption(std::string const& option) const 
     {
         for (auto itr = keyValueOptionHandler.cbegin(); itr != keyValueOptionHandler.cend(); ++itr)
             if (itr->first == option)
@@ -282,7 +282,7 @@ namespace BT
         return false; 
     }
 
-    StartParams_t::StartParams_t(std::vector<std::string> const& options)
+    CStartParams::CStartParams(std::vector<std::string> const& options)
         : helpRequested(false),
           enableVerbose(false),
           clientId(0),

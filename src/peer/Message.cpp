@@ -1,7 +1,7 @@
 #include <cassert>
 #include <cstring>
 
-#include "Message.hpp"
+#include "peer/Message.hpp"
 
 bool BT::operator==(BT::Request_t const& a, BT::Request_t const& b) {
 	return (a.index == b.index) &&

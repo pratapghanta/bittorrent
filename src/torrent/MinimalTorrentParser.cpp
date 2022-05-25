@@ -1,11 +1,11 @@
 #include <functional>
 #include <openssl/sha.h>
 
-#include "MinimalTorrentParser.hpp"
-#include "Logger.hpp"
-#include "Defaults.hpp"
+#include "common/Defaults.hpp"
+#include "common/Helpers.hpp"
+#include "common/Logger.hpp"
+#include "torrent/MinimalTorrentParser.hpp"
 #include "StartParams.hpp"
-#include "helpers.hpp"
 
 /* TODO: Add exception safety */
 

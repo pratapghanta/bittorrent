@@ -18,38 +18,38 @@
 #include <sys/types.h>
 #include <openssl/sha.h>
 
-#include "Peer.hpp"
-#include "Defaults.hpp"
-#include "helpers.hpp"
-#include "Errors.hpp"
+#include "common/Defaults.hpp"
+#include "common/Errors.hpp"
+#include "common/Helpers.hpp"
+#include "peer/Peer.hpp"
 
 namespace 
 {
-	struct UnExpectedMessage : BT::BTException 
+	struct UnExpectedMessage : BT::CException 
 	{
 		UnExpectedMessage()
-            : BT::BTException("Malformed message is being communicated.") 
+            : BT::CException("Malformed message is being communicated.") 
         {}
 	};
 
-	struct BadSocketDescriptor : BT::BTException 
+	struct BadSocketDescriptor : BT::CException 
 	{
 		BadSocketDescriptor()
-            : BT::BTException("Bad socket descriptor.") 
+            : BT::CException("Bad socket descriptor.") 
         {}
 	};
 
-	struct UnableToCreateSocket : BT::BTException 
+	struct UnableToCreateSocket : BT::CException 
 	{
 		UnableToCreateSocket()
-            : BT::BTException("Unable to create a socket.") 
+            : BT::CException("Unable to create a socket.") 
         {}
 	};
 
-	struct SocketNonBlockable : BT::BTException 
+	struct SocketNonBlockable : BT::CException 
 	{
 		SocketNonBlockable()
-            : BT::BTException("Unable to make socket non-blockable.") 
+            : BT::CException("Unable to make socket non-blockable.") 
         {}
 	};
 

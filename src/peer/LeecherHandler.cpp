@@ -18,10 +18,10 @@
 #include <pthread.h>
 #include <openssl/sha.h>
 
-#include "Seeder.hpp"
-#include "Defaults.hpp"
-#include "Message.hpp"
-#include "BinaryFileHandler.hpp"
+#include "common/Defaults.hpp"
+#include "peer/BinaryFileHandler.hpp"
+#include "peer/Message.hpp"
+#include "peer/Seeder.hpp"
 
 namespace {
 	std::string const getDataFilename(std::string const& torrentFilename) {
@@ -78,8 +78,8 @@ void BT::Seeder_t::LeecherHandler_t::StartTransfer(void) {
 		auto requestMsg = leecher.ReceiveMessage(BT::Message_t::MessageType::REQUEST);
 		BT::Request_t const request = requestMsg.getRequest();
 
-		BT::BinaryFileHandler_t fileHndl(getDataFilename(torrent.GetFileName()));
-		fileHndl.seek((request.index * request.length) + request.begin);
+		BT::CBinaryFileHandler fileHndl(getDataFilename(torrent.GetFileName()));
+		fileHndl.Seek((request.index * request.length) + request.begin);
 
 		long block = 0;
 		long bytesTransfered = 0;
@@ -96,7 +96,7 @@ void BT::Seeder_t::LeecherHandler_t::StartTransfer(void) {
 				auto keepAlive = leecher.ReceiveMessage(BT::Message_t::MessageType::INTERESTED);
 			}
 
-			std::string const& data = fileHndl.get();
+			std::string const& data = fileHndl.Get();
 			if (data.empty())
 				break;
 			leecher.Send(data.c_str(), data.length());

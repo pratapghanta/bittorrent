@@ -8,25 +8,25 @@
 #include <functional>
 #include <algorithm>
 
-#include "Peer.hpp"
-#include "Torrent.hpp"
+#include "peer/Peer.hpp"
+#include "torrent/Torrent.hpp"
 
 namespace BT 
 {
-	class StartParams_t 
+	class CStartParams 
 	{
 	public:
-		StartParams_t(std::vector<std::string> const&);
-		StartParams_t(StartParams_t const&) = default;
-		StartParams_t(StartParams_t&&) = default;
-		StartParams_t& operator=(StartParams_t const&) = default;
-		StartParams_t& operator=(StartParams_t&&) = default;
-		~StartParams_t() = default;
+		CStartParams(std::vector<std::string> const&);
+		CStartParams(CStartParams const&) = default;
+		CStartParams(CStartParams&&) = default;
+		CStartParams& operator=(CStartParams const&) = default;
+		CStartParams& operator=(CStartParams&&) = default;
+		~CStartParams() = default;
 
 		bool IsSeeder() const;
 
 		static std::string GetHelpMesssage();
-		friend std::ostream& operator<<(std::ostream&, BT::StartParams_t const&);
+		friend std::ostream& operator<<(std::ostream&, BT::CStartParams const&);
 
 	private:
 		void throwException(std::exception const&) const;
@@ -53,7 +53,7 @@ namespace BT
 		std::map<std::string, std::function<void(std::string const&)>> keyValueOptionHandler;
 	};
 
-	std::ostream& operator<<(std::ostream& os, BT::StartParams_t const&);
+	std::ostream& operator<<(std::ostream& os, BT::CStartParams const&);
 }
 
 #endif

@@ -1,10 +1,10 @@
 #include <iostream>
 #include <cmath>
 
-#include "Torrent.hpp"
-#include "Defaults.hpp"
-#include "Metainfo.hpp"
-#include "MinimalTorrentParser.hpp"
+#include "common/Defaults.hpp"
+#include "torrent/Metainfo.hpp"
+#include "torrent/MinimalTorrentParser.hpp"
+#include "torrent/Torrent.hpp"
 
 namespace BT {
 	Torrent_t::Torrent_t(/* IN  */ std::string const& torrent,

@@ -3,10 +3,12 @@
 
 #include <iostream>
 #include <fstream>
-#include "TorrentParser.hpp"
+
+#include "torrent/Metainfo.hpp"
+#include "torrent/TorrentParser.hpp"
 
 namespace BT {
-    class MinimalTorrentParser_t : public TorrentParser_t {
+    class MinimalTorrentParser_t : public ITorrentParser {
     public:
         MinimalTorrentParser_t();
         ~MinimalTorrentParser_t() = default;

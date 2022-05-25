@@ -4,7 +4,7 @@
 #include <vector>
 #include <string>
 
-#include "Errors.hpp"
+#include "common/StatusCode.hpp"
 
 namespace BT {
 

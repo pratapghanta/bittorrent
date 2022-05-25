@@ -19,69 +19,82 @@ endif
 
 CC = g++
 
-SRC_DIR         = $(PROJECT_DIR)
-SRC_INCLUDEDIR  = $(PROJECT_DIR)/include
-SRC_OBJDIR      = $(PROJECT_DIR)/$(BUILD_CONFIG)/obj
-SRC_LIBDIR      = $(PROJECT_DIR)/$(BUILD_CONFIG)/lib
-SRC_BINDIR      = $(PROJECT_DIR)/$(BUILD_CONFIG)/bin
+SRC_DIR          = $(PROJECT_DIR)
+SRC_OBJDIR       = $(PROJECT_DIR)/$(BUILD_CONFIG)/obj
+SRC_LIBDIR       = $(PROJECT_DIR)/$(BUILD_CONFIG)/lib
+SRC_BINDIR       = $(PROJECT_DIR)/$(BUILD_CONFIG)/bin
 
-SRC_LIB         = $(SRC_LIBDIR)/lib$(PROJECT_NAME).a
-SRC_RUN         = $(SRC_BINDIR)/$(PROJECT_NAME)
+SRC_LIB          = $(SRC_LIBDIR)/lib$(PROJECT_NAME).a
+SRC_RUN          = $(SRC_BINDIR)/$(PROJECT_NAME)
 
-SRC_CXXFLAGS    = -Wall -std=c++11 -I$(SRC_INCLUDEDIR) -I$(OPENSSL_INCLUDE)
-SRC_LIBFLAGS    = $(SRC_LIB) -L$(OPENSSL_LIBDIR) -lssl -lcrypto -lpthread
-SRC_CXXFLAGS    = -Wall -std=c++17 -I$(SRC_INCLUDEDIR)
+SRC_INCLUDEFLAGS = -I$(OPENSSL_INCLUDE) -I$(PROJECT_DIR)/include
+SRC_CXXFLAGS     = -Wall -std=c++17 $(SRC_INCLUDEFLAGS)
+SRC_LIBFLAGS     = $(SRC_LIB) -L$(OPENSSL_LIBDIR) -lssl -lcrypto -lpthread
 
 ifeq ("x$(BUILD_CONFIG)", "xdebug")
 	SRC_CXXFLAGS := -g -D_DEBUG $(SRC_CXXFLAGS)
 endif
 
-SRC_FILES       = StartParams.cpp          \
-				  AppConductor.cpp         \
-				  helpers.cpp              \
-				  Leecher.cpp              \
-				  LeecherHandler.cpp       \
-				  Message.cpp              \
-				  MinimalTorrentParser.cpp \
-				  Peer.cpp                 \
-				  Piece.cpp                \
-				  Seeder.cpp               \
-				  Torrent.cpp
+SRC_MODULES      = common                   \
+                   peer                     \
+                   socket                   \
+                   torrent
 
-SRC_OBJS        = $(patsubst %.cpp, %.o, $(SRC_FILES))
+SRC_FILES        = common/Helpers.cpp               \
+				   common/Logger.cpp                \
+  				   peer/BinaryFileHandler.cpp       \
+   				   peer/Leecher.cpp                 \
+				   peer/LeecherHandler.cpp          \
+				   peer/Message.cpp                 \
+				   peer/Peer.cpp                    \
+				   peer/Piece.cpp                   \
+				   peer/Seeder.cpp                  \
+				   socket/ServerSocketObserver.cpp  \
+				   torrent/MinimalTorrentParser.cpp \
+				   torrent/Torrent.cpp              \
+				   AppConductor.cpp                 \
+                   StartParams.cpp
 
-GTEST_INCUDEDIR = /usr/include/gtest
-GTEST_LIB       = /usr/lib/x86_64-linux-gnu/libgtest.a
+SRC_OBJS          = $(patsubst %.cpp, %.o, $(SRC_FILES))
+SRC_BUILD_DIR     = $(addprefix $(SRC_OBJDIR)/,$(SRC_MODULES))
 
-GTEST_CXXFLAGS  = -I$(GTEST_INCLUDEDIR)
-GTEST_LIBFLAGS  = -lpthread $(GTEST_LIB)
+GTEST_INCUDEDIR   = /usr/include/gtest
+GTEST_LIB         = /usr/lib/x86_64-linux-gnu/libgtest.a
 
-TEST_DIR        = $(PROJECT_DIR)/test
-TEST_INCLUDEDIR = $(TEST_DIR)/$(BUILD_CONFIG)/include
-TEST_BINDIR     = $(TEST_DIR)/$(BUILD_CONFIG)/bin
-TEST_OBJDIR     = $(TEST_DIR)/$(BUILD_CONFIG)/obj
+GTEST_CXXFLAGS    = -I$(GTEST_INCLUDEDIR)
+GTEST_LIBFLAGS    = -lpthread $(GTEST_LIB)
 
-TEST_RUN        = $(TEST_BINDIR)/test_$(PROJECT_NAME)
+TEST_DIR          = $(PROJECT_DIR)/unittest
+TEST_INCLUDEDIR   = $(TEST_DIR)/$(BUILD_CONFIG)/include
+TEST_BINDIR       = $(TEST_DIR)/$(BUILD_CONFIG)/bin
+TEST_OBJDIR       = $(TEST_DIR)/$(BUILD_CONFIG)/obj
 
-TEST_LIBFLAGS   = $(GTEST_LIBFLAGS) $(SRC_LIBFLAGS)
-TEST_CXXFLAGS   = $(SRC_CXXFLAGS) $(GTEST_CXXFLAGS) -I$(SRC_INCLUDEDIR) -I$(TEST_DIR) -I$(TEST_INCLUDEDIR)
+TEST_RUN          = $(TEST_BINDIR)/test_$(PROJECT_NAME)
+
+TEST_INCLUDEFLAGS = $(SRC_INCLUDEFLAGS) -I$(TEST_DIR) -I$(TEST_INCLUDEDIR)
+TEST_LIBFLAGS     = $(GTEST_LIBFLAGS) $(SRC_LIBFLAGS)
+TEST_CXXFLAGS     = $(SRC_CXXFLAGS) $(GTEST_CXXFLAGS) $(TEST_INCLUDEFLAGS) 
 
 ifeq ("x$(BUILD_CONFIG)","xdebug")
 	TEST_CXXFLAGS := -g -D_DEBUG $(TEST_CXXFLAGS)
 endif
 
-TEST_FILES      = main.cpp                     \
-				  testMinimalTorrentParser.cpp 
+TEST_FILES        = main.cpp                     \
+				    testMinimalTorrentParser.cpp 
 
-TEST_OBJS       = $(patsubst %.cpp, %.o, $(TEST_FILES))
+TEST_OBJS         = $(patsubst %.cpp, %.o, $(TEST_FILES))
+
+
+$(SRC_BUILD_DIR):
+	@mkdir -p $@
 
 $(SRC_OBJDIR)/%.o : $(SRC_DIR)/%.cpp
 	@mkdir -p $(SRC_OBJDIR)
 	$(CC) -c $(SRC_CXXFLAGS) $< -o $@
 
-$(SRC_LIB): $(addprefix $(SRC_OBJDIR)/,$(SRC_OBJS))
+$(SRC_LIB): $(SRC_BUILD_DIR) $(addprefix $(SRC_OBJDIR)/,$(SRC_OBJS))
 	@mkdir -p $(SRC_LIBDIR)
-	ar rvs $(SRC_LIB) $(SRC_OBJDIR)/*.o
+	ar rvs $(SRC_LIB) $(SRC_OBJDIR)/*.o $(addsuffix /*.o,$(SRC_BUILD_DIR))
 	
 $(SRC_RUN) : $(SRC_LIB) $(SRC_DIR)/main.cpp
 	@mkdir -p $(SRC_BINDIR) $(SRC_OBJDIR)
