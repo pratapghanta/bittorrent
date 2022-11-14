@@ -23,7 +23,7 @@ namespace {
         socklen_t len = sizeof(sockaddr_in);
         memset((void*) &sin, 0, sizeof(sin));
         if (getsockname(sockfd, (sockaddr*) &sin, &len) == -1) {
-            ThrowErrorAndExit("Unable to determine IP address associated with the socket.");            
+            PrintErrorAndExit("Unable to determine IP address associated with the socket.");            
         }
 
         return getIPv4AddrFromSockaddr(sin);
@@ -37,7 +37,7 @@ namespace {
         server_addr.sin_port = htons(mListeningPort);
 
         if (::bind(sockfd, (sockaddr*) &server_addr, sizeof(server_addr)) != 0) {
-            ThrowErrorAndExit("Socket binding failed.");
+            PrintErrorAndExit("Socket binding failed.");
         }
     }
 }
@@ -93,7 +93,7 @@ namespace BT {
             socklen_t clilen = sizeof(client_addr);
             int peerfd = accept(mSockfd, (sockaddr *) &client_addr, &clilen);
             if (peerfd == Defaults::BadFD)
-                ThrowErrorAndExit("Unable to connect to leecher.");
+                PrintErrorAndExit("Unable to connect to leecher.");
 
             nPeers++;
 

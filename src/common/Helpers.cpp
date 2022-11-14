@@ -6,7 +6,7 @@
 #include "common/Defaults.hpp"
 #include "common/Helpers.hpp"
 
-void ThrowErrorAndExit(std::string const& errorMsg) {
+void PrintErrorAndExit(std::string const& errorMsg) {
 	std::cerr << "ERROR: " << errorMsg << std::endl;
 	exit(-1);
 }

@@ -25,7 +25,7 @@ namespace {
 	int const createServerSocket() {
 		int sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP); /* TCP */
 		if (sockfd == BT::Defaults::BadFD)
-			ThrowErrorAndExit("Socket creation failed.");
+			PrintErrorAndExit("Socket creation failed.");
 		return sockfd;
 	}
 
@@ -37,7 +37,7 @@ namespace {
 		server_addr.sin_port = htons(port);
 
 		if (::bind(sockfd, (sockaddr*) &server_addr, sizeof(server_addr)) != 0)
-			ThrowErrorAndExit("Socket binding failed.");
+			PrintErrorAndExit("Socket binding failed.");
 	}
 
 	std::string getIPFromSockAddr(sockaddr_in const& addr) {
@@ -54,7 +54,7 @@ namespace {
 		if (getsockname(sockfd, (sockaddr*) &sin, &len) != -1)
 			return getIPFromSockAddr(sin);
 
-		ThrowErrorAndExit("Unable to get seeder IP.");
+		PrintErrorAndExit("Unable to get seeder IP.");
 		return std::string(""); // Unreachable code. Might not have RVO :(
 	}
 }
@@ -114,7 +114,7 @@ namespace BT {
 
 			int leecherfd = accept(sockfd, (sockaddr *) &client_addr, &clilen);
 			if (leecherfd == Defaults::BadFD)
-				ThrowErrorAndExit("Unable to connect to leecher.");
+				PrintErrorAndExit("Unable to connect to leecher.");
 
 			nPeers++;
 

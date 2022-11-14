@@ -20,7 +20,7 @@
 
 #include "common/Defaults.hpp"
 #include "peer/BinaryFileHandler.hpp"
-#include "peer/Message.hpp"
+#include "peer/MessageParcel.hpp"
 #include "peer/Seeder.hpp"
 
 namespace {
@@ -69,14 +69,14 @@ void BT::Seeder_t::LeecherHandler_t::StartTransfer(void) {
 	long totalBytesTransferred = 0;
 
 	std::string const avaliablePieces(torrent.GetNumOfPieces(), '1');
-	leecher.SendMessage(BT::Message_t::getBitfieldMessage(avaliablePieces));
+	leecher.SendMessage(BT::MessageParcel::getBitfieldMessage(avaliablePieces));
 
-	auto msg = leecher.ReceiveMessage(BT::Message_t::MessageType::INTERESTED);
+	auto msg = leecher.ReceiveMessage(BT::MessageParcel::MessageType::INTERESTED);
 	while (msg.isInterested()) {
-		leecher.SendMessage(BT::Message_t::getUnChokedMessage());
+		leecher.SendMessage(BT::MessageParcel::getUnChokedMessage());
 
-		auto requestMsg = leecher.ReceiveMessage(BT::Message_t::MessageType::REQUEST);
-		BT::Request_t const request = requestMsg.getRequest();
+		auto requestMsg = leecher.ReceiveMessage(BT::MessageParcel::MessageType::REQUEST);
+		BT::RequestParcel const request = requestMsg.getRequest();
 
 		BT::CBinaryFileHandler fileHndl(getDataFilename(torrent.GetFileName()));
 		fileHndl.Seek((request.index * request.length) + request.begin);
@@ -89,11 +89,11 @@ void BT::Seeder_t::LeecherHandler_t::StartTransfer(void) {
 			{
 				block++;
 
-				BT::Piece_t piece(request.index, bytesTransfered + 1, nullptr);
-				BT::Message_t const& pieceMsg = BT::Message_t::getPieceMessage(piece);
+				BT::PieceParcel piece(request.index, bytesTransfered + 1, nullptr);
+				BT::MessageParcel const& pieceMsg = BT::MessageParcel::getPieceMessage(piece);
 				leecher.SendMessage(pieceMsg);
 
-				auto keepAlive = leecher.ReceiveMessage(BT::Message_t::MessageType::INTERESTED);
+				auto keepAlive = leecher.ReceiveMessage(BT::MessageParcel::MessageType::INTERESTED);
 			}
 
 			std::string const& data = fileHndl.Get();
@@ -105,7 +105,7 @@ void BT::Seeder_t::LeecherHandler_t::StartTransfer(void) {
 
 		totalBytesTransferred += bytesTransfered;
 
-		msg = leecher.ReceiveMessage(BT::Message_t::MessageType::INTERESTED);
+		msg = leecher.ReceiveMessage(BT::MessageParcel::MessageType::INTERESTED);
 		if (msg.isKeepAlive()) usleep(1000000);
 	}
 }
