@@ -83,27 +83,27 @@ namespace
 		return std::stoul(buffer);
 	}
 
-	BT::Message_t::MessageType const receiveTypeOfMessage(BT::Peer_t const& peer) 
+	BT::MessageParcel::MessageType const receiveTypeOfMessage(BT::Peer_t const& peer) 
 	{
 		unsigned int const nBytesToRead = 1;
 		auto buffer = receiveString(peer, nBytesToRead);
-		return BT::Message_t::MessageType(std::stoi(buffer));
+		return BT::MessageParcel::MessageType(std::stoi(buffer));
 	}
 
-	template<BT::Message_t::MessageType msgType>
-	BT::Message_t const receiveSpecificMessage(BT::Peer_t const& peer) 
+	template<BT::MessageParcel::MessageType msgType>
+	BT::MessageParcel const receiveSpecificMessage(BT::Peer_t const& peer) 
 	{
 		if (receiveLengthOfMessage(peer) == 0) 
-			return BT::Message_t::getKeepAliveMessage();
+			return BT::MessageParcel::getKeepAliveMessage();
 
 		if (receiveTypeOfMessage(peer) != msgType)
 			throw UnExpectedMessage();
 		
-		std::map<BT::Message_t::MessageType, std::function<BT::Message_t const()>> handlers;
-		handlers[BT::Message_t::MessageType::CHOKE] = BT::Message_t::getChokedMessage;
-		handlers[BT::Message_t::MessageType::UNCHOKE] = BT::Message_t::getUnChokedMessage;
-		handlers[BT::Message_t::MessageType::INTERESTED] = BT::Message_t::getInterestedMessage;
-		handlers[BT::Message_t::MessageType::NOTINTERESTED] = BT::Message_t::getNotInterestedMessage;
+		std::map<BT::MessageParcel::MessageType, std::function<BT::MessageParcel const()>> handlers;
+		handlers[BT::MessageParcel::MessageType::CHOKE] = BT::MessageParcel::getChokedMessage;
+		handlers[BT::MessageParcel::MessageType::UNCHOKE] = BT::MessageParcel::getUnChokedMessage;
+		handlers[BT::MessageParcel::MessageType::INTERESTED] = BT::MessageParcel::getInterestedMessage;
+		handlers[BT::MessageParcel::MessageType::NOTINTERESTED] = BT::MessageParcel::getNotInterestedMessage;
 
 		auto itr = handlers.find(msgType);
 		if (itr != handlers.end()) 
@@ -113,73 +113,73 @@ namespace
 	}
 
 	template<>
-	BT::Message_t const receiveSpecificMessage<BT::Message_t::MessageType::HAVE>(BT::Peer_t const& peer) 
+	BT::MessageParcel const receiveSpecificMessage<BT::MessageParcel::MessageType::HAVE>(BT::Peer_t const& peer) 
 	{
 		if (receiveLengthOfMessage(peer) == 0) 
-			return BT::Message_t::getKeepAliveMessage();
+			return BT::MessageParcel::getKeepAliveMessage();
 
-		if(receiveTypeOfMessage(peer) != BT::Message_t::MessageType::HAVE) 
+		if(receiveTypeOfMessage(peer) != BT::MessageParcel::MessageType::HAVE) 
 			throw UnExpectedMessage();
 
 		unsigned int const nBytesToRead = sizeof(long);
 		auto buffer = receiveString(peer, nBytesToRead);
-		return BT::Message_t::getHaveMessage(std::stol(buffer));
+		return BT::MessageParcel::getHaveMessage(std::stol(buffer));
 	}
 
 	template<>
-	BT::Message_t const receiveSpecificMessage<BT::Message_t::MessageType::BITFIELD>(BT::Peer_t const& peer) 
+	BT::MessageParcel const receiveSpecificMessage<BT::MessageParcel::MessageType::BITFIELD>(BT::Peer_t const& peer) 
 	{
 		auto msgLength = receiveLengthOfMessage(peer);
 		if (msgLength == 0) 
-			return BT::Message_t::getKeepAliveMessage();
+			return BT::MessageParcel::getKeepAliveMessage();
 
-		if (receiveTypeOfMessage(peer) != BT::Message_t::MessageType::HAVE) 
+		if (receiveTypeOfMessage(peer) != BT::MessageParcel::MessageType::HAVE) 
 			throw UnExpectedMessage();
 
 		auto buffer = receiveString(peer, msgLength);
-		return  BT::Message_t::getBitfieldMessage(buffer);
+		return  BT::MessageParcel::getBitfieldMessage(buffer);
 	}
 
 	template<>
-	BT::Message_t const receiveSpecificMessage<BT::Message_t::MessageType::REQUEST>(BT::Peer_t const& peer) 
+	BT::MessageParcel const receiveSpecificMessage<BT::MessageParcel::MessageType::REQUEST>(BT::Peer_t const& peer) 
 	{
 		if (receiveLengthOfMessage(peer) == 0) 
-			return BT::Message_t::getKeepAliveMessage();
+			return BT::MessageParcel::getKeepAliveMessage();
 
-		if (receiveTypeOfMessage(peer) != BT::Message_t::MessageType::HAVE) 
+		if (receiveTypeOfMessage(peer) != BT::MessageParcel::MessageType::HAVE) 
 			throw UnExpectedMessage();
 
-		BT::Request_t request(receiveLong(peer), receiveLong(peer), receiveLong(peer));
-		return  BT::Message_t::getRequestMessage(request);
+		BT::RequestParcel request(receiveLong(peer), receiveLong(peer), receiveLong(peer));
+		return  BT::MessageParcel::getRequestMessage(request);
 	}
 
 	template<>
-	BT::Message_t const receiveSpecificMessage<BT::Message_t::MessageType::PIECE>(BT::Peer_t const& peer) 
+	BT::MessageParcel const receiveSpecificMessage<BT::MessageParcel::MessageType::PIECE>(BT::Peer_t const& peer) 
 	{
 		if (receiveLengthOfMessage(peer) == 0) 
-			return BT::Message_t::getKeepAliveMessage();
+			return BT::MessageParcel::getKeepAliveMessage();
 
-		if (receiveTypeOfMessage(peer) != BT::Message_t::MessageType::HAVE) 
+		if (receiveTypeOfMessage(peer) != BT::MessageParcel::MessageType::HAVE) 
 			throw UnExpectedMessage();
 
-		BT::Piece_t piece(receiveLong(peer), receiveLong(peer), nullptr);
-		return  BT::Message_t::getPieceMessage(piece);
+		BT::PieceParcel piece(receiveLong(peer), receiveLong(peer), nullptr);
+		return  BT::MessageParcel::getPieceMessage(piece);
 	}
 
 	template<>
-	BT::Message_t const receiveSpecificMessage<BT::Message_t::MessageType::CANCEL>(BT::Peer_t const& peer) 
+	BT::MessageParcel const receiveSpecificMessage<BT::MessageParcel::MessageType::CANCEL>(BT::Peer_t const& peer) 
 	{
 		if (receiveLengthOfMessage(peer) == 0) 
-			return BT::Message_t::getKeepAliveMessage();
+			return BT::MessageParcel::getKeepAliveMessage();
 
-		if (receiveTypeOfMessage(peer) != BT::Message_t::MessageType::HAVE) 
+		if (receiveTypeOfMessage(peer) != BT::MessageParcel::MessageType::HAVE) 
 			throw UnExpectedMessage();
 
-		BT::Request_t cancel(receiveLong(peer), receiveLong(peer), receiveLong(peer));
-		return  BT::Message_t::getCancelMessage(cancel);
+		BT::RequestParcel cancel(receiveLong(peer), receiveLong(peer), receiveLong(peer));
+		return  BT::MessageParcel::getCancelMessage(cancel);
 	}
 
-	void sendMessageLength(BT::Peer_t const &peer, BT::Message_t const &msg) 
+	void sendMessageLength(BT::Peer_t const &peer, BT::MessageParcel const &msg) 
 	{
 		char buffer[BT::Defaults::MaxBufferSize] = "";
 
@@ -188,7 +188,7 @@ namespace
 		peer.Send(buffer, sizeof(msgLength));
 	}
 
-	void sendMessageType(BT::Peer_t const &peer, BT::Message_t const &msg) 
+	void sendMessageType(BT::Peer_t const &peer, BT::MessageParcel const &msg) 
 	{
 		// char buffer[BT::Defaults::MaxBufferSize] = "";
 		// ??
@@ -201,29 +201,29 @@ namespace
 		peer.Send(buffer, sizeof(value));
 	}
 
-	void sendMessageAttributes(BT::Peer_t const &peer, BT::Message_t const &msg) 
+	void sendMessageAttributes(BT::Peer_t const &peer, BT::MessageParcel const &msg) 
 	{
 		sendMessageLength(peer, msg);
 		sendMessageType(peer, msg);
 	}
 
-	template<BT::Message_t::MessageType msgType>
-	void sendSpecificMessage(BT::Peer_t const &peer, BT::Message_t const &msg) {}
+	template<BT::MessageParcel::MessageType msgType>
+	void sendSpecificMessage(BT::Peer_t const &peer, BT::MessageParcel const &msg) {}
 
 	template<>
-	void sendSpecificMessage<BT::Message_t::MessageType::CHOKE>(BT::Peer_t const &peer, BT::Message_t const &msg) 
+	void sendSpecificMessage<BT::MessageParcel::MessageType::CHOKE>(BT::Peer_t const &peer, BT::MessageParcel const &msg) 
 	{
 		sendMessageAttributes(peer, msg);
 	}
 
 	template<>
-	void sendSpecificMessage<BT::Message_t::MessageType::UNCHOKE>(BT::Peer_t const &peer, BT::Message_t const &msg) 
+	void sendSpecificMessage<BT::MessageParcel::MessageType::UNCHOKE>(BT::Peer_t const &peer, BT::MessageParcel const &msg) 
 	{
 		sendMessageAttributes(peer, msg);
 	}
 
 	template<>
-	void sendSpecificMessage<BT::Message_t::MessageType::INTERESTED>(BT::Peer_t const &peer, BT::Message_t const &msg) 
+	void sendSpecificMessage<BT::MessageParcel::MessageType::INTERESTED>(BT::Peer_t const &peer, BT::MessageParcel const &msg) 
 	{
 		sendMessageLength(peer, msg);
 		if (msg.getLength() == 0) return; /* Keepalive */
@@ -231,20 +231,20 @@ namespace
 	}
 
 	template<>
-	void sendSpecificMessage<BT::Message_t::MessageType::NOTINTERESTED>(BT::Peer_t const &peer, BT::Message_t const &msg) 
+	void sendSpecificMessage<BT::MessageParcel::MessageType::NOTINTERESTED>(BT::Peer_t const &peer, BT::MessageParcel const &msg) 
 	{
 		sendMessageAttributes(peer, msg);
 	}
 
 	template<>
-	void sendSpecificMessage<BT::Message_t::MessageType::HAVE>(BT::Peer_t const &peer, BT::Message_t const &msg) 
+	void sendSpecificMessage<BT::MessageParcel::MessageType::HAVE>(BT::Peer_t const &peer, BT::MessageParcel const &msg) 
 	{
 		sendMessageAttributes(peer, msg);
 		sendLong(peer, msg.getHave());
 	}
 
 	template<>
-	void sendSpecificMessage<BT::Message_t::MessageType::BITFIELD>(BT::Peer_t const &peer, BT::Message_t const &msg) 
+	void sendSpecificMessage<BT::MessageParcel::MessageType::BITFIELD>(BT::Peer_t const &peer, BT::MessageParcel const &msg) 
 	{
 		sendMessageAttributes(peer, msg);
 
@@ -256,7 +256,7 @@ namespace
 	}
 
 	template<>
-	void sendSpecificMessage<BT::Message_t::MessageType::REQUEST>(BT::Peer_t const &peer, BT::Message_t const &msg) 
+	void sendSpecificMessage<BT::MessageParcel::MessageType::REQUEST>(BT::Peer_t const &peer, BT::MessageParcel const &msg) 
 	{
 		sendMessageAttributes(peer, msg);
 
@@ -267,7 +267,7 @@ namespace
 	}
 
 	template<>
-	void sendSpecificMessage<BT::Message_t::MessageType::PIECE>(BT::Peer_t const &peer, BT::Message_t const &msg) 
+	void sendSpecificMessage<BT::MessageParcel::MessageType::PIECE>(BT::Peer_t const &peer, BT::MessageParcel const &msg) 
 	{
 		sendMessageAttributes(peer, msg);
 
@@ -277,7 +277,7 @@ namespace
 	}
 
 	template<>
-	void sendSpecificMessage<BT::Message_t::MessageType::CANCEL>(BT::Peer_t const &peer, BT::Message_t const &msg) 
+	void sendSpecificMessage<BT::MessageParcel::MessageType::CANCEL>(BT::Peer_t const &peer, BT::MessageParcel const &msg) 
 	{
 		sendMessageAttributes(peer, msg);
 
@@ -419,36 +419,36 @@ void BT::Peer_t::Send(void const * const buf, unsigned int const count) const {
 	write(sockfd, buf, count);
 }
 
-BT::Message_t const BT::Peer_t::ReceiveMessage(BT::Message_t::MessageType const msgType) const {
-	std::map<Message_t::MessageType, std::function<Message_t const(Peer_t const&)>> handlers;
+BT::MessageParcel const BT::Peer_t::ReceiveMessage(BT::MessageParcel::MessageType const msgType) const {
+	std::map<MessageParcel::MessageType, std::function<MessageParcel const(Peer_t const&)>> handlers;
 
-	handlers[Message_t::MessageType::CHOKE] = receiveSpecificMessage<Message_t::MessageType::CHOKE>;
-	handlers[Message_t::MessageType::UNCHOKE] = receiveSpecificMessage<Message_t::MessageType::UNCHOKE>;
-	handlers[Message_t::MessageType::INTERESTED] = receiveSpecificMessage<Message_t::MessageType::INTERESTED>;
-	handlers[Message_t::MessageType::NOTINTERESTED] = receiveSpecificMessage<Message_t::MessageType::NOTINTERESTED>;
-	handlers[Message_t::MessageType::HAVE] = receiveSpecificMessage<Message_t::MessageType::HAVE>;
-	handlers[Message_t::MessageType::BITFIELD] = receiveSpecificMessage<Message_t::MessageType::BITFIELD>;
-	handlers[Message_t::MessageType::REQUEST] = receiveSpecificMessage<Message_t::MessageType::REQUEST>;
-	handlers[Message_t::MessageType::PIECE] = receiveSpecificMessage<Message_t::MessageType::PIECE>;
-	handlers[Message_t::MessageType::CANCEL] = receiveSpecificMessage<Message_t::MessageType::CANCEL>;
+	handlers[MessageParcel::MessageType::CHOKE] = receiveSpecificMessage<MessageParcel::MessageType::CHOKE>;
+	handlers[MessageParcel::MessageType::UNCHOKE] = receiveSpecificMessage<MessageParcel::MessageType::UNCHOKE>;
+	handlers[MessageParcel::MessageType::INTERESTED] = receiveSpecificMessage<MessageParcel::MessageType::INTERESTED>;
+	handlers[MessageParcel::MessageType::NOTINTERESTED] = receiveSpecificMessage<MessageParcel::MessageType::NOTINTERESTED>;
+	handlers[MessageParcel::MessageType::HAVE] = receiveSpecificMessage<MessageParcel::MessageType::HAVE>;
+	handlers[MessageParcel::MessageType::BITFIELD] = receiveSpecificMessage<MessageParcel::MessageType::BITFIELD>;
+	handlers[MessageParcel::MessageType::REQUEST] = receiveSpecificMessage<MessageParcel::MessageType::REQUEST>;
+	handlers[MessageParcel::MessageType::PIECE] = receiveSpecificMessage<MessageParcel::MessageType::PIECE>;
+	handlers[MessageParcel::MessageType::CANCEL] = receiveSpecificMessage<MessageParcel::MessageType::CANCEL>;
 
 	auto itr = handlers.find(msgType);
 	if (itr == handlers.end()) throw UnExpectedMessage();
 	return itr->second(*this);		
 }
 
-void BT::Peer_t::SendMessage(BT::Message_t const& msg) const {
-	std::map<Message_t::MessageType, std::function<void(Peer_t const& peer, BT::Message_t const&)>> handlers;
+void BT::Peer_t::SendMessage(BT::MessageParcel const& msg) const {
+	std::map<MessageParcel::MessageType, std::function<void(Peer_t const& peer, BT::MessageParcel const&)>> handlers;
 
-	handlers[Message_t::MessageType::CHOKE] = sendSpecificMessage<Message_t::MessageType::CHOKE>;
-	handlers[Message_t::MessageType::UNCHOKE] = sendSpecificMessage<Message_t::MessageType::UNCHOKE>;
-	handlers[Message_t::MessageType::INTERESTED] = sendSpecificMessage<Message_t::MessageType::INTERESTED>;
-	handlers[Message_t::MessageType::NOTINTERESTED] = sendSpecificMessage<Message_t::MessageType::NOTINTERESTED>;
-	handlers[Message_t::MessageType::HAVE] = sendSpecificMessage<Message_t::MessageType::HAVE>;
-	handlers[Message_t::MessageType::BITFIELD] = sendSpecificMessage<Message_t::MessageType::BITFIELD>;
-	handlers[Message_t::MessageType::REQUEST] = sendSpecificMessage<Message_t::MessageType::REQUEST>;
-	handlers[Message_t::MessageType::PIECE] = sendSpecificMessage<Message_t::MessageType::PIECE>;
-	handlers[Message_t::MessageType::CANCEL] = sendSpecificMessage<Message_t::MessageType::CANCEL>;
+	handlers[MessageParcel::MessageType::CHOKE] = sendSpecificMessage<MessageParcel::MessageType::CHOKE>;
+	handlers[MessageParcel::MessageType::UNCHOKE] = sendSpecificMessage<MessageParcel::MessageType::UNCHOKE>;
+	handlers[MessageParcel::MessageType::INTERESTED] = sendSpecificMessage<MessageParcel::MessageType::INTERESTED>;
+	handlers[MessageParcel::MessageType::NOTINTERESTED] = sendSpecificMessage<MessageParcel::MessageType::NOTINTERESTED>;
+	handlers[MessageParcel::MessageType::HAVE] = sendSpecificMessage<MessageParcel::MessageType::HAVE>;
+	handlers[MessageParcel::MessageType::BITFIELD] = sendSpecificMessage<MessageParcel::MessageType::BITFIELD>;
+	handlers[MessageParcel::MessageType::REQUEST] = sendSpecificMessage<MessageParcel::MessageType::REQUEST>;
+	handlers[MessageParcel::MessageType::PIECE] = sendSpecificMessage<MessageParcel::MessageType::PIECE>;
+	handlers[MessageParcel::MessageType::CANCEL] = sendSpecificMessage<MessageParcel::MessageType::CANCEL>;
 
 	auto itr = handlers.find(msg.getType());
 	if (itr == handlers.end()) throw UnExpectedMessage();

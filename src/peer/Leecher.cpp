@@ -16,7 +16,7 @@
 #include "common/Helpers.hpp"
 #include "peer/BinaryFileHandler.hpp"
 #include "peer/Leecher.hpp"
-#include "peer/Message.hpp"
+#include "peer/MessageParcel.hpp"
 #include "peer/Peer.hpp"
 
 namespace 
@@ -30,7 +30,7 @@ namespace
 		return ss.str();
 	}
 
-	bool const isPieceAvailableAtSeeder(BT::Message_t const& msg, long const pieceIndex) 
+	bool const isPieceAvailableAtSeeder(BT::MessageParcel const& msg, long const pieceIndex) 
 	{
 		auto piecesInfo = msg.getBitfield();
 		return piecesInfo[pieceIndex] == 1;
@@ -86,22 +86,22 @@ bool const BT::Leecher_t::communicatePortocolMessages()
 
 bool const BT::Leecher_t::getPieceFromSeeder(long const interestedPiece) 
 {
-	auto msg = seeder.ReceiveMessage(BT::Message_t::MessageType::BITFIELD);
+	auto msg = seeder.ReceiveMessage(BT::MessageParcel::MessageType::BITFIELD);
 
 	if (!isPieceAvailableAtSeeder(msg, interestedPiece)) 
 	{
-		seeder.SendMessage(Message_t::getNotInterestedMessage());
+		seeder.SendMessage(MessageParcel::getNotInterestedMessage());
 		return false;
 	}
 
-	seeder.SendMessage(Message_t::getInterestedMessage());
-	msg = seeder.ReceiveMessage(BT::Message_t::MessageType::CHOKE); /* Expecting choke/unchoke */
+	seeder.SendMessage(MessageParcel::getInterestedMessage());
+	msg = seeder.ReceiveMessage(BT::MessageParcel::MessageType::CHOKE); /* Expecting choke/unchoke */
 	if (msg.isChoked()) 
 		return false;
 
 	int const begin = 0;
-	auto requestDetails = BT::Request_t(interestedPiece, begin, torrent.GetPieceLength());
-	seeder.SendMessage(Message_t::getRequestMessage(requestDetails));
+	auto requestDetails = BT::RequestParcel(interestedPiece, begin, torrent.GetPieceLength());
+	seeder.SendMessage(MessageParcel::getRequestMessage(requestDetails));
 
 	auto isEndOfPiece = [&](long const currPos) 
 	{
@@ -118,10 +118,10 @@ bool const BT::Leecher_t::getPieceFromSeeder(long const interestedPiece)
 	{
 		if (fileContents.length() % BT::Defaults::BlockSize == 0)
 		{
-			auto pieceMsg = seeder.ReceiveMessage(BT::Message_t::MessageType::PIECE);
-			if (!(pieceMsg.getPiece() == BT::Piece_t(interestedPiece, fileContents.length(), nullptr)))
+			auto pieceMsg = seeder.ReceiveMessage(BT::MessageParcel::MessageType::PIECE);
+			if (!(pieceMsg.getPiece() == BT::PieceParcel(interestedPiece, fileContents.length(), nullptr)))
 				return false;
-			seeder.SendMessage(BT::Message_t::getKeepAliveMessage());
+			seeder.SendMessage(BT::MessageParcel::getKeepAliveMessage());
 		}
 
 		char dataBuf[2] = "\0";
@@ -148,6 +148,6 @@ void BT::Leecher_t::startTransfer()
 		/* Broadcast to all other peers */
 		/* Print to log about the downloaded piece */
 		/* Synchronize threads such that this piece is not downloaded again */
-		seeder.SendMessage(Message_t::getNotInterestedMessage());
+		seeder.SendMessage(MessageParcel::getNotInterestedMessage());
 	}
 }

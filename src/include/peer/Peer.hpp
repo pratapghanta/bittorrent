@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#include "Message.hpp"
+#include "MessageParcel.hpp"
 
 namespace BT 
 {
@@ -27,8 +27,8 @@ namespace BT
 		void Receive(void *buf, unsigned int const count) const;
 		void Send(void const * const buf, unsigned int const count) const;
 
-		Message_t const ReceiveMessage(Message_t::MessageType const type) const;
-		void SendMessage(Message_t const& msg) const;
+		MessageParcel const ReceiveMessage(MessageParcel::MessageType const type) const;
+		void SendMessage(MessageParcel const& msg) const;
 
 		std::string GetId() { return id; }
 
