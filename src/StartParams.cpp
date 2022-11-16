@@ -206,7 +206,7 @@ namespace BT
     void CStartParams::initKeyValueOptionsHandlers() 
     {
         keyValueOptionHandler[option_savefile] = [&](std::string const& value) { saveFilename = value; };
-        keyValueOptionHandler[option_savefile] = [&](std::string const& value) { logFilename = value; };
+        keyValueOptionHandler[option_logfile] = [&](std::string const& value) { logFilename = value; };
         keyValueOptionHandler[option_id] = [&](std::string const& value) { clientId = std::stoi(value); };
         keyValueOptionHandler[option_bindport] = [&](std::string const& value) 
         { 
