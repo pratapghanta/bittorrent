@@ -8,16 +8,16 @@ namespace BT
     class MessageParcelFactory
     {
     public:
-        MessageParcel const GetChokedMessage() const;
-        MessageParcel const GetUnChokedMessage() const;
-        MessageParcel const GetInterestedMessage() const;
-        MessageParcel const GetNotInterestedMessage() const;
-        MessageParcel const GetKeepAliveMessage() const;
-        MessageParcel const GetBitfieldMessage(std::string const&) const;
-        MessageParcel const GetPieceMessage(PieceParcel const&) const;
-        MessageParcel const GetHaveMessage(long const) const;
-        MessageParcel const GetRequestMessage(RequestParcel const&) const;
-        MessageParcel const GetCancelMessage(RequestParcel const&) const;
+        static MessageParcel const GetChokedMessage();
+        static MessageParcel const GetUnChokedMessage();
+        static MessageParcel const GetInterestedMessage();
+        static MessageParcel const GetNotInterestedMessage();
+        static MessageParcel const GetKeepAliveMessage();
+        static MessageParcel const GetBitfieldMessage(std::string const&);
+        static MessageParcel const GetPieceMessage(PieceParcel const&);
+        static MessageParcel const GetHaveMessage(long const);
+        static MessageParcel const GetRequestMessage(RequestParcel const&);
+        static MessageParcel const GetCancelMessage(RequestParcel const&);
     };
 }
 

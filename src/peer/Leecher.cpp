@@ -88,22 +88,21 @@ bool const BT::Leecher_t::communicatePortocolMessages()
 bool const BT::Leecher_t::getPieceFromSeeder(long const interestedPiece) 
 {
 	auto msg = seeder.ReceiveMessage(MessageType::BITFIELD);
-	MessageParcelFactory mpf;
 
 	if (!isPieceAvailableAtSeeder(msg, interestedPiece)) 
 	{
-		seeder.SendMessage(mpf.GetNotInterestedMessage());
+		seeder.SendMessage(MessageParcelFactory::GetNotInterestedMessage());
 		return false;
 	}
 
-	seeder.SendMessage(mpf.GetInterestedMessage());
+	seeder.SendMessage(MessageParcelFactory::GetInterestedMessage());
 	msg = seeder.ReceiveMessage(MessageType::CHOKE); /* Expecting choke/unchoke */
 	if (msg.IsChoked()) 
 		return false;
 
 	int const begin = 0;
 	auto requestDetails = BT::RequestParcel(interestedPiece, begin, torrent.pieceLength);
-	seeder.SendMessage(mpf.GetRequestMessage(requestDetails));
+	seeder.SendMessage(MessageParcelFactory::GetRequestMessage(requestDetails));
 
 	auto isEndOfPiece = [&](long const currPos) 
 	{
@@ -123,7 +122,7 @@ bool const BT::Leecher_t::getPieceFromSeeder(long const interestedPiece)
 			auto pieceMsg = seeder.ReceiveMessage(MessageType::PIECE);
 			if (!(pieceMsg.GetPiece() == BT::PieceParcel(interestedPiece, fileContents.length(), nullptr)))
 				return false;
-			seeder.SendMessage(mpf.GetKeepAliveMessage());
+			seeder.SendMessage(MessageParcelFactory::GetKeepAliveMessage());
 		}
 
 		char dataBuf[2] = "\0";
@@ -150,7 +149,6 @@ void BT::Leecher_t::startTransfer()
 		/* Broadcast to all other peers */
 		/* Print to log about the downloaded piece */
 		/* Synchronize threads such that this piece is not downloaded again */
-		MessageParcelFactory mpf;
-		seeder.SendMessage(mpf.GetNotInterestedMessage());
+		seeder.SendMessage(MessageParcelFactory::GetNotInterestedMessage());
 	}
 }

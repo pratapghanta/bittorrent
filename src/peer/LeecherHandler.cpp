@@ -68,14 +68,13 @@ void BT::Seeder_t::LeecherHandler_t::StartTransfer(void) {
 		return;
 
 	long totalBytesTransferred = 0;
-	MessageParcelFactory mpf;
 
 	std::string const avaliablePieces(torrent.numOfPieces, '1');
-	leecher.SendMessage(mpf.GetBitfieldMessage(avaliablePieces));
+	leecher.SendMessage(MessageParcelFactory::GetBitfieldMessage(avaliablePieces));
 
 	auto msg = leecher.ReceiveMessage(MessageType::INTERESTED);
 	while (msg.IsInterested()) {
-		leecher.SendMessage(mpf.GetUnChokedMessage());
+		leecher.SendMessage(MessageParcelFactory::GetUnChokedMessage());
 
 		auto requestMsg = leecher.ReceiveMessage(MessageType::REQUEST);
 		BT::RequestParcel const request = requestMsg.GetRequest();
@@ -92,7 +91,7 @@ void BT::Seeder_t::LeecherHandler_t::StartTransfer(void) {
 				block++;
 
 				BT::PieceParcel piece(request.index, bytesTransfered + 1, nullptr);
-				BT::MessageParcel const& pieceMsg = mpf.GetPieceMessage(piece);
+				BT::MessageParcel const& pieceMsg = MessageParcelFactory::GetPieceMessage(piece);
 				leecher.SendMessage(pieceMsg);
 
 				auto keepAlive = leecher.ReceiveMessage(MessageType::INTERESTED);

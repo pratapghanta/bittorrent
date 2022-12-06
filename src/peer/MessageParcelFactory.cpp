@@ -2,62 +2,62 @@
 
 namespace BT
 {
-    MessageParcel const MessageParcelFactory::GetChokedMessage() const
+    MessageParcel const MessageParcelFactory::GetChokedMessage()
 	{
         MessagePayload empty;
 		return MessageParcel(MessageType::CHOKE, 1ul, empty);
 	}
 
-	MessageParcel const MessageParcelFactory::GetUnChokedMessage() const
+	MessageParcel const MessageParcelFactory::GetUnChokedMessage()
 	{
         MessagePayload empty;
 		return MessageParcel(MessageType::UNCHOKE, 1ul, empty);
 	}
 
-	MessageParcel const MessageParcelFactory::GetInterestedMessage() const
+	MessageParcel const MessageParcelFactory::GetInterestedMessage()
 	{
         MessagePayload empty;
 		return MessageParcel(MessageType::INTERESTED, 1ul, empty);
 	}
 
-	MessageParcel const MessageParcelFactory::GetNotInterestedMessage() const
+	MessageParcel const MessageParcelFactory::GetNotInterestedMessage()
 	{
 		MessagePayload empty;
 		return MessageParcel(MessageType::NOTINTERESTED, 1ul, empty);
 	}
 
-	MessageParcel const MessageParcelFactory::GetHaveMessage(long const have) const
+	MessageParcel const MessageParcelFactory::GetHaveMessage(long const have)
 	{
         return MessageParcel(MessageType::HAVE, sizeof(have), MessagePayload{have});
 	}
 
-	MessageParcel const MessageParcelFactory::GetBitfieldMessage(std::string const& bitfield) const
+	MessageParcel const MessageParcelFactory::GetBitfieldMessage(std::string const& bitfield)
 	{
         return MessageParcel(MessageType::BITFIELD, bitfield.length(), MessagePayload{bitfield});
 	}
 
-	MessageParcel const MessageParcelFactory::GetRequestMessage(RequestParcel const& request) const
+	MessageParcel const MessageParcelFactory::GetRequestMessage(RequestParcel const& request)
 	{
         return MessageParcel(MessageType::REQUEST, 
                              1ul + request.Size(), 
                              MessagePayload{request});
 	}
 
-	MessageParcel const MessageParcelFactory::GetPieceMessage(PieceParcel const& piece) const
+	MessageParcel const MessageParcelFactory::GetPieceMessage(PieceParcel const& piece)
 	{
         return MessageParcel(MessageType::PIECE, 
                              1ul + piece.Size(), 
                              MessagePayload{piece});
 	}
 
-	MessageParcel const MessageParcelFactory::GetCancelMessage(RequestParcel const& cancel) const
+	MessageParcel const MessageParcelFactory::GetCancelMessage(RequestParcel const& cancel)
 	{
         return MessageParcel(MessageType::CANCEL, 
                              1ul + cancel.Size(), 
                              MessagePayload{cancel});
 	}
 
-	MessageParcel const MessageParcelFactory::GetKeepAliveMessage() const
+	MessageParcel const MessageParcelFactory::GetKeepAliveMessage()
 	{
         MessagePayload empty;
 		return MessageParcel(MessageType::INTERESTED, 0ul, empty);
