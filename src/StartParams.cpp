@@ -173,10 +173,6 @@ namespace BT
         return os;
     }
 
-    std::string StartParams::GetHelpMesssage() {
-        return Defaults::HelpMessage;
-    }
-
     bool StartParams::IsSeeder() const {
         return peers.empty();
     }

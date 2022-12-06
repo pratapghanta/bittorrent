@@ -54,7 +54,6 @@ SRC_FILES        = common/Helpers.cpp               \
 				   socket/ServerSocketObserver.cpp  \
 				   torrent/MinimalTorrentParser.cpp \
 				   torrent/Torrent.cpp              \
-				   AppConductor.cpp                 \
                    StartParams.cpp
 
 SRC_OBJS          = $(patsubst %.cpp, %.o, $(SRC_FILES))

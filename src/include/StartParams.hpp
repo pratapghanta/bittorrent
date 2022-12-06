@@ -25,7 +25,6 @@ namespace BT
 
 		bool IsSeeder() const;
 
-		static std::string GetHelpMesssage();
 		friend std::ostream& operator<<(std::ostream&, BT::StartParams const&);
 
 	private:
