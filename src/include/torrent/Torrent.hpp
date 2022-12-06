@@ -8,40 +8,29 @@
 
 namespace BT {
 
-	using PieceHashList_t = std::vector<std::string>;
+	using PieceHashList = std::vector<std::string>;
 	
 	class Torrent {
 	public:
 		Torrent() = default;
-		Torrent(/* IN */  std::string const& filename,
-		          /* OUT */ STATUSCODE& rStatus);
-		
+		Torrent(/* IN  */ std::string const& filename,
+		        /* OUT */ STATUSCODE& rStatus);
 		Torrent(Torrent const&) = default;
 		Torrent& operator=(Torrent const&) = default;
-
 		Torrent(Torrent&&) = default;
 		Torrent& operator=(Torrent&&) = default;
-
 		~Torrent() = default;
 
 		void Reset();
 
-		std::string const&  GetName() const { return mName; }
-		std::string const&  GetFileName() const { return mFilename; }
-		int const GetFileLength() const { return mFileLength; }
-		int const GetPieceLength() const { return mPieceLength; }
-		int const GetNumOfPieces() const { return mNumOfPieces; }
-		const PieceHashList_t GetPieceHashes() const { return mPieceHashes; }
-		std::string const&  GetInfoHash()  const { return mInfoHash; }
-
-	private:
-		std::string mName;
-		std::string mFilename;
-		unsigned int mFileLength;
-		unsigned int mNumOfPieces;
-		unsigned int mPieceLength;
-		PieceHashList_t mPieceHashes; 		    
-		std::string mInfoHash;
+	public:
+		std::string name;
+		std::string filename;
+		unsigned int fileLength;
+		unsigned int numOfPieces;
+		unsigned int pieceLength;
+		PieceHashList pieceHashes; 		    
+		std::string infoHash;
 	};
 
 	std::ostream& operator<<(std::ostream& os, Torrent const& t);

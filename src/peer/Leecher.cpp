@@ -46,7 +46,7 @@ namespace
 			if (hash[i] == '\0')
 				hash[i] = '_';
 
-		return torrent.GetPieceHashes()[pieceIndex].compare(reinterpret_cast<char*>(hash));
+		return torrent.pieceHashes[pieceIndex].compare(reinterpret_cast<char*>(hash));
 	}
 }
 
@@ -60,7 +60,7 @@ BT::Leecher_t::Leecher_t(BT::Torrent const t, Peer_t const& s)
 bool const BT::Leecher_t::communicatePortocolMessages() 
 {
 	seeder.Send(BT::Defaults::HandshakeMessage.c_str(), BT::Defaults::HandshakeMessage.length());
-	seeder.Send(torrent.GetInfoHash().c_str(), BT::Defaults::Sha1MdSize - 1);
+	seeder.Send(torrent.infoHash.c_str(), BT::Defaults::Sha1MdSize - 1);
 	seeder.Send(leecher.GetId().c_str(), BT::Defaults::Sha1MdSize - 1);
 
 	char buffer[BT::Defaults::MaxBufferSize] = "";
@@ -72,7 +72,7 @@ bool const BT::Leecher_t::communicatePortocolMessages()
 	{
 		memset(buffer, 0, BT::Defaults::MaxBufferSize);
 		seeder.Receive(buffer, BT::Defaults::Sha1MdSize - 1);
-		return torrent.GetInfoHash().compare(buffer) == 0;
+		return torrent.infoHash.compare(buffer) == 0;
 	};
 
 	auto expectedSeeder = [&]() 
@@ -102,17 +102,17 @@ bool const BT::Leecher_t::getPieceFromSeeder(long const interestedPiece)
 		return false;
 
 	int const begin = 0;
-	auto requestDetails = BT::RequestParcel(interestedPiece, begin, torrent.GetPieceLength());
+	auto requestDetails = BT::RequestParcel(interestedPiece, begin, torrent.pieceLength);
 	seeder.SendMessage(mpf.GetRequestMessage(requestDetails));
 
 	auto isEndOfPiece = [&](long const currPos) 
 	{
-		return currPos >= torrent.GetPieceLength();
+		return currPos >= torrent.pieceLength;
 	};
 	
 	auto isEndOfDataFile = [&](long const currPos) 
 	{
-		return (interestedPiece * torrent.GetPieceLength()) + begin + currPos >= torrent.GetFileLength();
+		return (interestedPiece * torrent.pieceLength) + begin + currPos >= torrent.fileLength;
 	};
 
 	std::string fileContents;
@@ -131,7 +131,7 @@ bool const BT::Leecher_t::getPieceFromSeeder(long const interestedPiece)
 		fileContents += std::string(dataBuf);
 	}
 
-	BT::CBinaryFileHandler fileHndl(getSaveFilenameForPiece(torrent.GetFileName(), interestedPiece));
+	BT::CBinaryFileHandler fileHndl(getSaveFilenameForPiece(torrent.filename, interestedPiece));
 	fileHndl.Put(fileContents);
 
 	return isTransferSuccessful(torrent, interestedPiece, fileContents);
