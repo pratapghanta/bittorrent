@@ -1,4 +1,4 @@
-#ifndef TORRENT_HPP
+#if !defined(TORRENT_HPP)
 #define TORRENT_HPP
 
 #include <vector>
@@ -46,4 +46,5 @@ namespace BT {
 
 	std::ostream& operator<<(std::ostream& os, Torrent_t const& t);
 }
-#endif
+
+#endif // !defined(TORRENT_HPP)

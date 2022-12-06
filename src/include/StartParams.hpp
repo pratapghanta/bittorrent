@@ -1,9 +1,9 @@
-#ifndef CONFIG_HPP
-#define CONFIG_HPP
+#if !defined(START_PARAMS_HPP)
+#define START_PARAMS_HPP
 
 #include <iostream>
 #include <vector>
-#include <map>
+#include <unordered_map>
 #include <string>
 #include <functional>
 #include <algorithm>
@@ -49,11 +49,11 @@ namespace BT
 		PeersList_t peers;
 
 	private:
-		std::map<std::string, std::function<void()>> flagOptionHandler;
-		std::map<std::string, std::function<void(std::string const&)>> keyValueOptionHandler;
+		std::unordered_map<std::string, std::function<void()>> flagOptionHandler;
+		std::unordered_map<std::string, std::function<void(std::string const&)>> keyValueOptionHandler;
 	};
 
 	std::ostream& operator<<(std::ostream& os, BT::CStartParams const&);
 }
 
-#endif
+#endif // !defined(START_PARAMS_HPP)

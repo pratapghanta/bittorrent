@@ -1,4 +1,4 @@
-#ifndef LEECHER_HPP
+#if !defined(LEECHER_HPP)
 #define LEECHER_HPP
 
 #include <vector>
@@ -23,4 +23,4 @@ namespace BT {
 	};
 }
 
-#endif
+#endif // !defined(LEECHER_HPP)

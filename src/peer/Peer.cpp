@@ -1,3 +1,4 @@
+#if 0
 #include <iostream>
 #include <string>
 #include <algorithm>
@@ -458,3 +459,5 @@ void BT::Peer_t::SendMessage(BT::MessageParcel const& msg) const {
 std::ostream& BT::operator<<(std::ostream& os, BT::Peer_t const& peer) {
 	os << peer.id << "        " << peer.ip << ":" << peer.port;
 }
+
+#endif

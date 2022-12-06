@@ -65,4 +65,5 @@ namespace BT {
         std::string  mInfoHash;
     };
 }
+
 #endif // !defined(METAINFO_HPP)

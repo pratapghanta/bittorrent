@@ -1,4 +1,4 @@
-#ifndef PEER_HPP
+#if !defined(PEER_HPP)
 #define PEER_HPP
 
 #include <string>
@@ -27,7 +27,7 @@ namespace BT
 		void Receive(void *buf, unsigned int const count) const;
 		void Send(void const * const buf, unsigned int const count) const;
 
-		MessageParcel const ReceiveMessage(MessageParcel::MessageType const type) const;
+		MessageParcel const ReceiveMessage(MessageType const type) const;
 		void SendMessage(MessageParcel const& msg) const;
 
 		std::string GetId() { return id; }
@@ -48,4 +48,5 @@ namespace BT
 	void swap(Peer_t& first, Peer_t& second);
 	std::ostream& operator<<(std::ostream& os, BT::Peer_t const&);
 }
-#endif
+
+#endif // !defined(PEER_HPP)

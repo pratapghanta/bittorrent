@@ -1,4 +1,4 @@
-#ifndef APP_CONDUCTOR_HPP
+#if !defined(APP_CONDUCTOR_HPP)
 #define APP_CONDUCTOR_HPP
 
 #include "torrent/Torrent.hpp"
@@ -27,4 +27,4 @@ namespace BT {
     };
 }
 
-#endif // APP_CONDUCTOR_HPP
+#endif // !defined(APP_CONDUCTOR_HPP)

@@ -12,4 +12,4 @@ namespace BT
     };
 }
 
-#endif // defined(SERVER_SOCKET_HPP)
+#endif // !defined(SERVER_SOCKET_HPP)

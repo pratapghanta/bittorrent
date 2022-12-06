@@ -21,11 +21,12 @@
 #include "common/Defaults.hpp"
 #include "peer/BinaryFileHandler.hpp"
 #include "peer/MessageParcel.hpp"
+#include "peer/MessageParcelFactory.hpp"
 #include "peer/Seeder.hpp"
 
 namespace {
 	std::string const getDataFilename(std::string const& torrentFilename) {
-		unsigned int endPos = torrentFilename.rfind(BT::Defaults::torrentFileExtension);
+		unsigned int endPos = torrentFilename.rfind(BT::Defaults::TorrentFileExtension);
 		return torrentFilename.substr(0, endPos);
 	}
 }
@@ -36,15 +37,15 @@ BT::Seeder_t::LeecherHandler_t::LeecherHandler_t(BT::Torrent_t const& t, BT::Pee
 bool const BT::Seeder_t::LeecherHandler_t::communicatePortocolMessages(void) {
 	bool const handshakeFailed = false;
 
-	leecher.Send(BT::Defaults::handshakeMessage.c_str(), BT::Defaults::handshakeMessage.length());
+	leecher.Send(BT::Defaults::HandshakeMessage.c_str(), BT::Defaults::HandshakeMessage.length());
 	leecher.Send(torrent.GetInfoHash().c_str(), BT::Defaults::Sha1MdSize - 1);
 	leecher.Send(seeder.GetId().c_str(), BT::Defaults::Sha1MdSize - 1);
 
 	char buffer[BT::Defaults::MaxBufferSize] = "";
 	memset(buffer, 0, BT::Defaults::MaxBufferSize);
-	leecher.Receive(buffer, BT::Defaults::handshakeMessage.length());
+	leecher.Receive(buffer, BT::Defaults::HandshakeMessage.length());
 
-	if (std::string(buffer).compare(BT::Defaults::handshakeMessage) != 0)
+	if (std::string(buffer).compare(BT::Defaults::HandshakeMessage) != 0)
 		return handshakeFailed;
 
 	auto inSameSwarm = [&]() {
@@ -67,16 +68,17 @@ void BT::Seeder_t::LeecherHandler_t::StartTransfer(void) {
 		return;
 
 	long totalBytesTransferred = 0;
+	MessageParcelFactory mpf;
 
 	std::string const avaliablePieces(torrent.GetNumOfPieces(), '1');
-	leecher.SendMessage(BT::MessageParcel::getBitfieldMessage(avaliablePieces));
+	leecher.SendMessage(mpf.GetBitfieldMessage(avaliablePieces));
 
-	auto msg = leecher.ReceiveMessage(BT::MessageParcel::MessageType::INTERESTED);
-	while (msg.isInterested()) {
-		leecher.SendMessage(BT::MessageParcel::getUnChokedMessage());
+	auto msg = leecher.ReceiveMessage(MessageType::INTERESTED);
+	while (msg.IsInterested()) {
+		leecher.SendMessage(mpf.GetUnChokedMessage());
 
-		auto requestMsg = leecher.ReceiveMessage(BT::MessageParcel::MessageType::REQUEST);
-		BT::RequestParcel const request = requestMsg.getRequest();
+		auto requestMsg = leecher.ReceiveMessage(MessageType::REQUEST);
+		BT::RequestParcel const request = requestMsg.GetRequest();
 
 		BT::CBinaryFileHandler fileHndl(getDataFilename(torrent.GetFileName()));
 		fileHndl.Seek((request.index * request.length) + request.begin);
@@ -90,10 +92,10 @@ void BT::Seeder_t::LeecherHandler_t::StartTransfer(void) {
 				block++;
 
 				BT::PieceParcel piece(request.index, bytesTransfered + 1, nullptr);
-				BT::MessageParcel const& pieceMsg = BT::MessageParcel::getPieceMessage(piece);
+				BT::MessageParcel const& pieceMsg = mpf.GetPieceMessage(piece);
 				leecher.SendMessage(pieceMsg);
 
-				auto keepAlive = leecher.ReceiveMessage(BT::MessageParcel::MessageType::INTERESTED);
+				auto keepAlive = leecher.ReceiveMessage(MessageType::INTERESTED);
 			}
 
 			std::string const& data = fileHndl.Get();
@@ -105,8 +107,8 @@ void BT::Seeder_t::LeecherHandler_t::StartTransfer(void) {
 
 		totalBytesTransferred += bytesTransfered;
 
-		msg = leecher.ReceiveMessage(BT::MessageParcel::MessageType::INTERESTED);
-		if (msg.isKeepAlive()) usleep(1000000);
+		msg = leecher.ReceiveMessage(MessageType::INTERESTED);
+		if (msg.IsKeepAlive()) usleep(1000000);
 	}
 }
 

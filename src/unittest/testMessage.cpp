@@ -1,3 +1,4 @@
+#if 0
 #include <gtest/gtest.h>
 
 #include "MessageParcel.hpp"
@@ -61,3 +62,4 @@ TEST(testMessageAttributes, requestMsg) {
 TEST(testMessageAttributes, keepaliveMessageLength) {
 	EXPECT_TRUE(BT::MessageParcel::getKeepAliveMessage().getLength() == 0);
 }
+#endif

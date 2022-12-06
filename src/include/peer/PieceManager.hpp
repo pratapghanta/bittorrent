@@ -1,4 +1,4 @@
-#ifndef PIECEMANAGER_HPP
+#if !defined(PIECEMANAGER_HPP)
 #define PIECEMANAGER_HPP
 
 #include <vector>
@@ -13,4 +13,5 @@ private:
 	std::vector<long> pieces;
 	long numOfPieces;
 };
-#endif
+
+#endif // !defined(PIECEMANAGER_HPP)

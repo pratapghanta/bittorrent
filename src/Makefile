@@ -28,7 +28,7 @@ SRC_LIB          = $(SRC_LIBDIR)/lib$(PROJECT_NAME).a
 SRC_RUN          = $(SRC_BINDIR)/$(PROJECT_NAME)
 
 SRC_INCLUDEFLAGS = -I$(OPENSSL_INCLUDE) -I$(PROJECT_DIR)/include
-SRC_CXXFLAGS     = -Wall -std=c++20 $(SRC_INCLUDEFLAGS)
+SRC_CXXFLAGS     = -Wall -std=c++17 $(SRC_INCLUDEFLAGS)
 SRC_LIBFLAGS     = $(SRC_LIB) -L$(OPENSSL_LIBDIR) -lssl -lcrypto -lpthread
 
 ifeq ("x$(BUILD_CONFIG)", "xdebug")
@@ -46,6 +46,7 @@ SRC_FILES        = common/Helpers.cpp               \
    				   peer/Leecher.cpp                 \
 				   peer/LeecherHandler.cpp          \
 				   peer/MessageParcel.cpp           \
+				   peer/MessageParcelFactory.cpp    \
 				   peer/Peer.cpp                    \
 				   peer/PieceParcel.cpp             \
 				   peer/RequestParcel.cpp           \
@@ -74,11 +75,7 @@ TEST_RUN          = $(TEST_BINDIR)/test_$(PROJECT_NAME)
 
 TEST_INCLUDEFLAGS = $(SRC_INCLUDEFLAGS) -I$(TEST_DIR) -I$(TEST_INCLUDEDIR)
 TEST_LIBFLAGS     = $(GTEST_LIBFLAGS) $(SRC_LIBFLAGS)
-TEST_CXXFLAGS     = $(SRC_CXXFLAGS) $(GTEST_CXXFLAGS) $(TEST_INCLUDEFLAGS) 
-
-ifeq ("x$(BUILD_CONFIG)","xdebug")
-	TEST_CXXFLAGS := -g -D_DEBUG $(TEST_CXXFLAGS)
-endif
+TEST_CXXFLAGS     = $(SRC_CXXFLAGS) $(GTEST_CXXFLAGS) $(TEST_INCLUDEFLAGS)
 
 TEST_FILES        = main.cpp                     \
 				    testMinimalTorrentParser.cpp 

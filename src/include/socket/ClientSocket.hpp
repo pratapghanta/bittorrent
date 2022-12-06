@@ -1,4 +1,4 @@
-#if defined(CLIENT_SOCKET_HPP)
+#if !defined(CLIENT_SOCKET_HPP)
 #define CLIENT_SOCKET_HPP
 
 #include "Socket/Socket.hpp"
@@ -10,4 +10,4 @@ namespace BT {
     };
 }
 
-#endif // defined(CLIENT_SOCKET_HPP)
+#endif // !defined(CLIENT_SOCKET_HPP)

@@ -5,12 +5,14 @@ namespace BT
 {
     struct RequestParcel
     {
+        RequestParcel();
+        RequestParcel(long const i, long const b, long const l);
+
+        unsigned int Size() const { return sizeof(index) + sizeof(begin) + sizeof(length); }
+
         long index;       /* which piece */
         long begin;       /* offset within piece */
         long length;      /* number of bytes in the piece */
-
-        RequestParcel();
-        RequestParcel(long const i, long const b, long const l);
     };
 
     bool operator==(RequestParcel const& a, RequestParcel const& b);

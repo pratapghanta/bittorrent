@@ -133,7 +133,7 @@ namespace
     void printDefaults(std::ostream& os) 
     {
         os << "*** BitTorrent application configuration ***" << std::endl;
-        os << "    Default log file name: " << BT::Defaults::defaultLogFilename << std::endl;
+        os << "    Default log file name: " << BT::Defaults::DefaultLogFilename << std::endl;
         os << "    Maximum internal buffer size: " << BT::Defaults::MaxBufferSize << std::endl;
         os << "    Maximum number of peer connections: " << BT::Defaults::MaxConnections << std::endl;
         os << "    Range of ports to use for reaching peers: " << BT::Defaults::InitPort << "-" << BT::Defaults::MaxPort << std::endl;
@@ -174,17 +174,7 @@ namespace BT
     }
 
     std::string CStartParams::GetHelpMesssage() {
-        return std::string(
-            "bittorrent [OPTIONS] file.torrent\n"
-            "  -h            \t Print the help screen\n"
-            "  -b port       \t Bind to this port for incoming connections\n"
-            "  -s save_file  \t Save the torrent in directory save_dir (dflt: .)\n"
-            "  -l log_file   \t Save logs to log_file (dflt: bt_client.log)\n"
-            "  -p ip:port    \t Instead of contacting the tracker for a peer list,\n"
-            "                \t use this peer instead, ip:port (ip or hostname)\n"
-            "                \t (include multiple -p for more than 1 peer)\n"
-            "  -I id         \t Set the node identifier to id (dflt: random)\n"
-            "  -v            \t verbose, print additional verbose info\n");
+        return Defaults::HelpMessage;
     }
 
     bool CStartParams::IsSeeder() const {
@@ -199,12 +189,15 @@ namespace BT
 
     void CStartParams::initFlagOptionHandlers() 
     {
+        flagOptionHandler.clear();
         flagOptionHandler[option_help] = [&]() { helpRequested = true; };
         flagOptionHandler[option_verbose] = [&]() { enableVerbose = true; };
     }
 
     void CStartParams::initKeyValueOptionsHandlers() 
     {
+        keyValueOptionHandler.clear();
+        // TODO: Invalid save and log file names?
         keyValueOptionHandler[option_savefile] = [&](std::string const& value) { saveFilename = value; };
         keyValueOptionHandler[option_logfile] = [&](std::string const& value) { logFilename = value; };
         keyValueOptionHandler[option_id] = [&](std::string const& value) { clientId = std::stoi(value); };
@@ -287,7 +280,7 @@ namespace BT
           enableVerbose(false),
           clientId(0),
           seederPort(Defaults::DefaultPort),
-          logFilename(Defaults::defaultLogFilename)
+          logFilename(Defaults::DefaultLogFilename)
     {
         if (options.size() == 0) 
         {

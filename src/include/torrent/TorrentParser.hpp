@@ -16,4 +16,5 @@ namespace BT
                                  /* OUT */ Metainfo_t& rInfo) const = 0;
     };
 }
+
 #endif // !defined(TORRENT_PARSER_HPP)

@@ -1,5 +1,5 @@
-#ifndef MESSAGE_HPP
-#define MESSAGE_HPP
+#if !defined(MESSAGE_PARCEL_HPP)
+#define MESSAGE_PARCEL_HPP
 
 #include <string>
 #include <variant>
@@ -38,52 +38,41 @@ namespace BT {
 	class MessageParcel
 	{
 	public:
-		MessageParcel() : type{MessageType::END}, length{0} {}
-		MessageParcel(MessageParcel const& other) = default;
+		MessageParcel();
+		MessageParcel(MessageType, unsigned long const, MessagePayload const&);
+		MessageParcel(MessageParcel const&) = default;
 		MessageParcel& operator=(MessageParcel const&) = default;
-		MessageParcel(MessageParcel&& other) = default;
+		MessageParcel(MessageParcel&&) = default;
 		MessageParcel& operator=(MessageParcel&&) = default;
 		~MessageParcel() = default;
 
-		bool isChoked() const { return type == MessageType::CHOKE; }
-		bool isUnChoked() const { return type == MessageType::UNCHOKE; }
-		bool isInterested() const { return type == MessageType::INTERESTED; }
-		bool isNotInterested() const { return type == MessageType::NOTINTERESTED; }
-		bool isHave() const { return type == MessageType::HAVE; }
-		bool isBitfield() const { return type == MessageType::BITFIELD; }
-		bool isRequest() const { return type == MessageType::REQUEST; }
-		bool isPiece() const { return type == MessageType::PIECE; }
-		bool isCancel() const { return type == MessageType::CANCEL; }
-		bool isKeepAlive() const { return length == 0; }
+		bool IsChoked() const { return type == MessageType::CHOKE; }
+		bool IsUnChoked() const { return type == MessageType::UNCHOKE; }
+		bool IsInterested() const { return type == MessageType::INTERESTED; }
+		bool IsNotInterested() const { return type == MessageType::NOTINTERESTED; }
+		bool IsHave() const { return type == MessageType::HAVE; }
+		bool IsBitfield() const { return type == MessageType::BITFIELD; }
+		bool IsRequest() const { return type == MessageType::REQUEST; }
+		bool IsPiece() const { return type == MessageType::PIECE; }
+		bool IsCancel() const { return type == MessageType::CANCEL; }
+		bool IsKeepAlive() const { return length == 0ul; }
 
-		MessageType const getType() const { return type; }
-		unsigned long const getLength() const { return length; }
-
-		std::string const getBitfield() const;
-		long const getHave() const;
-		PieceParcel const getPiece() const;
-		RequestParcel const getRequest() const;
-		RequestParcel const getCancel() const;
-
-		static MessageParcel const getChokedMessage();
-		static MessageParcel const getUnChokedMessage();
-		static MessageParcel const getInterestedMessage();
-		static MessageParcel const getNotInterestedMessage();
-		static MessageParcel const getKeepAliveMessage();
-		static MessageParcel const getBitfieldMessage(std::string const& bitfield);
-		static MessageParcel const getPieceMessage(PieceParcel const& piece);
-		static MessageParcel const getHaveMessage(long const have);
-		static MessageParcel const getRequestMessage(RequestParcel const& request);
-		static MessageParcel const getCancelMessage(RequestParcel const& cancel);
+		MessageType const GetType() const { return type; }
+		unsigned long const GetLength() const { return length; }
+		std::string const GetBitfield() const;
+		long const GetHave() const;
+		PieceParcel const GetPiece() const;
+		RequestParcel const GetRequest() const;
+		RequestParcel const GetCancel() const;
 
 	private:
 		MessageType type;           /* type of bit torrent mesage               */
 		unsigned long length;       /* length of the remaining message          */
 									/* 0 length message is a keep-alive message */
-		MessagePayload mPayload;
+		MessagePayload payload;
 
 		void reset();
 	};
 }
 
-#endif
+#endif // !defined(MESSAGE_PARCEL_HPP)

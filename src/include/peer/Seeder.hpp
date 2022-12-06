@@ -1,4 +1,4 @@
-#ifndef SEEDER_HPP
+#if !defined(SEEDER_HPP)
 #define SEEDER_HPP
 
 #include <vector>
@@ -45,4 +45,5 @@ namespace BT {
 		Peer_t leecher;
 	};
 }
-#endif
+
+#endif // !defined(SEEDER_HPP)
