@@ -3,10 +3,10 @@
 #include "AppConductor.hpp"
 
 namespace BT {
-    AppConductor_t::AppConductor_t(StartParams const& p)
+    AppConductor::AppConductor(StartParams const& p)
                 : mParams(p) {}
 
-    void AppConductor_t::Start() const {
+    void AppConductor::Start() const {
         if (mParams.helpRequested) {
             std::cout << StartParams::GetHelpMesssage() << std::endl;
             return;
@@ -30,13 +30,13 @@ namespace BT {
         }
     }
 
-    void AppConductor_t::startSeeder(Torrent_t const& torrent) const 
+    void AppConductor::startSeeder(Torrent_t const& torrent) const 
     {
         Seeder_t s(torrent, mParams.seederPort);
         s.StartTransfer();
     }
 
-    void AppConductor_t::startLeechers(Torrent_t const& torrent) const 
+    void AppConductor::startLeechers(Torrent_t const& torrent) const 
     {
         for (auto& seeder : mParams.peers) 
         {

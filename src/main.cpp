@@ -35,7 +35,7 @@ int main (int argc, char * argv[])
 	handleInterruptSignal();
 
 	BT::StartParams const params(getVectorOfStrings(argc, argv));
-	BT::AppConductor_t const ac(params);
+	BT::AppConductor const ac(params);
 	ac.Start();
 
 	return 0;

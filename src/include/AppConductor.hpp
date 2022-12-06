@@ -5,17 +5,17 @@
 #include "StartParams.hpp"
 
 namespace BT {
-    class AppConductor_t {
+    class AppConductor {
     public:
-        AppConductor_t(StartParams const& p);
+        AppConductor(StartParams const& p);
 
-        AppConductor_t(AppConductor_t const&) = default;
-        AppConductor_t& operator=(AppConductor_t const&) = default;
+        AppConductor(AppConductor const&) = default;
+        AppConductor& operator=(AppConductor const&) = default;
 
-        AppConductor_t(AppConductor_t&&) = default;
-        AppConductor_t& operator=(AppConductor_t&&) = default;
+        AppConductor(AppConductor&&) = default;
+        AppConductor& operator=(AppConductor&&) = default;
 
-        ~AppConductor_t() = default;
+        ~AppConductor() = default;
 
         void Start() const;
 
