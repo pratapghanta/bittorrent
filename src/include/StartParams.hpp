@@ -13,20 +13,20 @@
 
 namespace BT 
 {
-	class CStartParams 
+	class StartParams 
 	{
 	public:
-		CStartParams(std::vector<std::string> const&);
-		CStartParams(CStartParams const&) = default;
-		CStartParams(CStartParams&&) = default;
-		CStartParams& operator=(CStartParams const&) = default;
-		CStartParams& operator=(CStartParams&&) = default;
-		~CStartParams() = default;
+		StartParams(std::vector<std::string> const&);
+		StartParams(StartParams const&) = default;
+		StartParams(StartParams&&) = default;
+		StartParams& operator=(StartParams const&) = default;
+		StartParams& operator=(StartParams&&) = default;
+		~StartParams() = default;
 
 		bool IsSeeder() const;
 
 		static std::string GetHelpMesssage();
-		friend std::ostream& operator<<(std::ostream&, BT::CStartParams const&);
+		friend std::ostream& operator<<(std::ostream&, BT::StartParams const&);
 
 	private:
 		void throwException(std::exception const&) const;
@@ -53,7 +53,7 @@ namespace BT
 		std::unordered_map<std::string, std::function<void(std::string const&)>> keyValueOptionHandler;
 	};
 
-	std::ostream& operator<<(std::ostream& os, BT::CStartParams const&);
+	std::ostream& operator<<(std::ostream& os, BT::StartParams const&);
 }
 
 #endif // !defined(START_PARAMS_HPP)

@@ -7,7 +7,7 @@
 namespace BT {
     class AppConductor_t {
     public:
-        AppConductor_t(CStartParams const& p);
+        AppConductor_t(StartParams const& p);
 
         AppConductor_t(AppConductor_t const&) = default;
         AppConductor_t& operator=(AppConductor_t const&) = default;
@@ -23,7 +23,7 @@ namespace BT {
 		void startSeeder(BT::Torrent_t const&) const;
 		void startLeechers(BT::Torrent_t const&) const;
 	
-        CStartParams mParams;
+        StartParams mParams;
     };
 }
 

@@ -149,7 +149,7 @@ namespace
 
 namespace BT 
 {
-    std::ostream& operator<<(std::ostream& os, CStartParams const& params) 
+    std::ostream& operator<<(std::ostream& os, StartParams const& params) 
     {
         printDefaults(os);
 
@@ -173,28 +173,28 @@ namespace BT
         return os;
     }
 
-    std::string CStartParams::GetHelpMesssage() {
+    std::string StartParams::GetHelpMesssage() {
         return Defaults::HelpMessage;
     }
 
-    bool CStartParams::IsSeeder() const {
+    bool StartParams::IsSeeder() const {
         return peers.empty();
     }
 
-    void CStartParams::throwException(std::exception const& e) const 
+    void StartParams::throwException(std::exception const& e) const 
     {
         if (!helpRequested)
             throw e;
     }
 
-    void CStartParams::initFlagOptionHandlers() 
+    void StartParams::initFlagOptionHandlers() 
     {
         flagOptionHandler.clear();
         flagOptionHandler[option_help] = [&]() { helpRequested = true; };
         flagOptionHandler[option_verbose] = [&]() { enableVerbose = true; };
     }
 
-    void CStartParams::initKeyValueOptionsHandlers() 
+    void StartParams::initKeyValueOptionsHandlers() 
     {
         keyValueOptionHandler.clear();
         // TODO: Invalid save and log file names?
@@ -216,13 +216,13 @@ namespace BT
         };
     }
 
-    void CStartParams::initOptionHandlers() 
+    void StartParams::initOptionHandlers() 
     {
         initFlagOptionHandlers();
         initKeyValueOptionsHandlers();
     }
 
-    void CStartParams::parseOptions(std::vector<std::string> const& options,
+    void StartParams::parseOptions(std::vector<std::string> const& options,
                                 bool const skipKeyValueOptions)
     {
         for (unsigned int i = 0; i < options.size(); i++)
@@ -259,7 +259,7 @@ namespace BT
             saveFilename = torrentFilename;
     }
 
-    bool CStartParams::isFlagOption(std::string const& option) const 
+    bool StartParams::isFlagOption(std::string const& option) const 
     {
         for (auto itr = flagOptionHandler.cbegin(); itr != flagOptionHandler.cend(); ++itr)
             if (itr->first == option)
@@ -267,7 +267,7 @@ namespace BT
         return false;
     }
 
-    bool CStartParams::isKeyValueOption(std::string const& option) const 
+    bool StartParams::isKeyValueOption(std::string const& option) const 
     {
         for (auto itr = keyValueOptionHandler.cbegin(); itr != keyValueOptionHandler.cend(); ++itr)
             if (itr->first == option)
@@ -275,7 +275,7 @@ namespace BT
         return false; 
     }
 
-    CStartParams::CStartParams(std::vector<std::string> const& options)
+    StartParams::StartParams(std::vector<std::string> const& options)
         : helpRequested(false),
           enableVerbose(false),
           clientId(0),

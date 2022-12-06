@@ -3,12 +3,12 @@
 #include "AppConductor.hpp"
 
 namespace BT {
-    AppConductor_t::AppConductor_t(CStartParams const& p)
+    AppConductor_t::AppConductor_t(StartParams const& p)
                 : mParams(p) {}
 
     void AppConductor_t::Start() const {
         if (mParams.helpRequested) {
-            std::cout << CStartParams::GetHelpMesssage() << std::endl;
+            std::cout << StartParams::GetHelpMesssage() << std::endl;
             return;
         }
 
