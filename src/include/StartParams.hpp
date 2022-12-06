@@ -45,7 +45,7 @@ namespace BT
 		std::string saveFilename;
 		std::string logFilename;
 		std::string torrentFilename;
-		PeersList_t peers;
+		PeersList peers;
 
 	private:
 		std::unordered_map<std::string, std::function<void()>> flagOptionHandler;

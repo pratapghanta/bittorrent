@@ -9,7 +9,7 @@
 namespace BT 
 {
 	class Peer;
-	using PeersList_t = std::vector<Peer>;
+	using PeersList = std::vector<Peer>;
 
 	class Peer 
 	{
