@@ -45,7 +45,7 @@ int main (int argc, char * argv[])
 	}
 
 	STATUSCODE status = STATUSCODE::SC_SUCCESS;
-	BT::Torrent_t torrent(params.torrentFilename, status);
+	BT::Torrent torrent(params.torrentFilename, status);
 	if (SC_FAILED(status)) 
 	{
 		return -1;

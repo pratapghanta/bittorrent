@@ -10,19 +10,19 @@ namespace BT {
 
 	using PieceHashList_t = std::vector<std::string>;
 	
-	class Torrent_t {
+	class Torrent {
 	public:
-		Torrent_t() = default;
-		Torrent_t(/* IN */  std::string const& filename,
+		Torrent() = default;
+		Torrent(/* IN */  std::string const& filename,
 		          /* OUT */ STATUSCODE& rStatus);
 		
-		Torrent_t(Torrent_t const&) = default;
-		Torrent_t& operator=(Torrent_t const&) = default;
+		Torrent(Torrent const&) = default;
+		Torrent& operator=(Torrent const&) = default;
 
-		Torrent_t(Torrent_t&&) = default;
-		Torrent_t& operator=(Torrent_t&&) = default;
+		Torrent(Torrent&&) = default;
+		Torrent& operator=(Torrent&&) = default;
 
-		~Torrent_t() = default;
+		~Torrent() = default;
 
 		void Reset();
 
@@ -44,7 +44,7 @@ namespace BT {
 		std::string mInfoHash;
 	};
 
-	std::ostream& operator<<(std::ostream& os, Torrent_t const& t);
+	std::ostream& operator<<(std::ostream& os, Torrent const& t);
 }
 
 #endif // !defined(TORRENT_HPP)

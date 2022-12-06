@@ -10,7 +10,7 @@
 namespace BT {
 	class Seeder_t {
 	public:
-		Seeder_t(Torrent_t const& t, unsigned int const p);
+		Seeder_t(Torrent const& t, unsigned int const p);
 
 		Seeder_t(Seeder_t const&) = delete;
 		Seeder_t& operator=(Seeder_t const&) = delete;
@@ -25,7 +25,7 @@ namespace BT {
 
 	private:
 		int sockfd;
-		Torrent_t torrent;
+		Torrent torrent;
 		unsigned int port;
 
 		class LeecherHandler_t;
@@ -34,13 +34,13 @@ namespace BT {
 
 	class Seeder_t::LeecherHandler_t {
 	public:
-		LeecherHandler_t(BT::Torrent_t const& t, Peer_t& seeder, Peer_t& leecher);
+		LeecherHandler_t(BT::Torrent const& t, Peer_t& seeder, Peer_t& leecher);
 		void StartTransfer();
 
 	private:
 		bool const communicatePortocolMessages();
 
-		Torrent_t torrent;
+		Torrent torrent;
 		Peer_t seeder;
 		Peer_t leecher;
 	};

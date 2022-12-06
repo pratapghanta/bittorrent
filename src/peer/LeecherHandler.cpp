@@ -31,7 +31,7 @@ namespace {
 	}
 }
 
-BT::Seeder_t::LeecherHandler_t::LeecherHandler_t(BT::Torrent_t const& t, BT::Peer_t& seeder, BT::Peer_t& leecher)
+BT::Seeder_t::LeecherHandler_t::LeecherHandler_t(BT::Torrent const& t, BT::Peer_t& seeder, BT::Peer_t& leecher)
 	: torrent(t), seeder(std::move(seeder)), leecher(std::move(leecher)) {}
 
 bool const BT::Seeder_t::LeecherHandler_t::communicatePortocolMessages(void) {

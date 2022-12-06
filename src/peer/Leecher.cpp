@@ -37,7 +37,7 @@ namespace
 		return piecesInfo[pieceIndex] == 1;
 	}
 
-	bool isTransferSuccessful(BT::Torrent_t const& torrent, long const pieceIndex, std::string const& fileContents)
+	bool isTransferSuccessful(BT::Torrent const& torrent, long const pieceIndex, std::string const& fileContents)
 	{
 		unsigned char hash[BT::Defaults::Sha1MdSize] = "";
 
@@ -50,7 +50,7 @@ namespace
 	}
 }
 
-BT::Leecher_t::Leecher_t(BT::Torrent_t const t, Peer_t const& s)
+BT::Leecher_t::Leecher_t(BT::Torrent const t, Peer_t const& s)
 	: torrent(t), 
 	  seeder(s) 
 {

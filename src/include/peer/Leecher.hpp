@@ -10,14 +10,14 @@
 namespace BT {
 	class Leecher_t {
 	public:
-		Leecher_t(BT::Torrent_t const t, Peer_t const& seeder);
+		Leecher_t(BT::Torrent const t, Peer_t const& seeder);
 		void startTransfer();
 
 	private:
 		bool const communicatePortocolMessages();
 		bool const getPieceFromSeeder(long const interestedPiece);
 
-		BT::Torrent_t const& torrent;
+		BT::Torrent const& torrent;
 		BT::Peer_t seeder;
 		BT::Peer_t leecher;
 	};

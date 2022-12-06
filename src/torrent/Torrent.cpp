@@ -7,7 +7,7 @@
 #include "torrent/Torrent.hpp"
 
 namespace BT {
-	Torrent_t::Torrent_t(/* IN  */ std::string const& torrent,
+	Torrent::Torrent(/* IN  */ std::string const& torrent,
 	                     /* OUT */ STATUSCODE& rStatus)
 			: mFileLength(0),
 			  mNumOfPieces(0),
@@ -39,7 +39,7 @@ namespace BT {
 		}
 	}
 
-	void Torrent_t::Reset() {
+	void Torrent::Reset() {
 		mFileLength = 0;
 		mNumOfPieces = 0;
 		mPieceLength = 0;
@@ -47,7 +47,7 @@ namespace BT {
 		mInfoHash.clear();
 	}
 
-	std::ostream& operator<<(std::ostream& os, BT::Torrent_t const& t) {
+	std::ostream& operator<<(std::ostream& os, BT::Torrent const& t) {
 		os << "*** Torrent details ***" << std::endl;
 		os << "    Name: " << t.GetName() << std::endl;
 		os << "    File size:" << t.GetFileLength() << " bytes" << std::endl;

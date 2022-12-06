@@ -60,7 +60,7 @@ namespace {
 }
 
 namespace BT {
-	Seeder_t::Seeder_t(Torrent_t const& t, unsigned int const p) 
+	Seeder_t::Seeder_t(Torrent const& t, unsigned int const p) 
 		: sockfd(Defaults::BadFD), torrent(t), port(p) {
 		leecherHandlers.reserve(Defaults::MaxConnections);
 	}
