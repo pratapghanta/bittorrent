@@ -1,4 +1,3 @@
-
 #include <iostream>
 #include <string>
 #include <algorithm>
@@ -62,7 +61,7 @@ namespace
 			throw SocketNonBlockable();
 	}
 
-	std::string receiveString(BT::Peer_t const& peer, unsigned int const nBytesToRead) 
+	std::string receiveString(BT::Peer const& peer, unsigned int const nBytesToRead) 
 	{
 		char buffer[BT::Defaults::MaxBufferSize] = "";
 		peer.Receive(static_cast<void*>(buffer), nBytesToRead);
@@ -71,21 +70,21 @@ namespace
 		return std::string(buffer);
 	}
 
-	long const receiveLong(BT::Peer_t const& peer) 
+	long const receiveLong(BT::Peer const& peer) 
 	{
 		unsigned int const nBytesToRead = sizeof(long);
 		auto buffer = receiveString(peer, nBytesToRead);
 		return std::stol(buffer);
 	}
 
-	unsigned long const receiveLengthOfMessage(BT::Peer_t const& peer) 
+	unsigned long const receiveLengthOfMessage(BT::Peer const& peer) 
 	{
 		unsigned int const nBytesToRead = sizeof(unsigned long);
 		auto buffer = receiveString(peer, nBytesToRead);
 		return std::stoul(buffer);
 	}
 
-	BT::MessageType const receiveTypeOfMessage(BT::Peer_t const& peer) 
+	BT::MessageType const receiveTypeOfMessage(BT::Peer const& peer) 
 	{
 		unsigned int const nBytesToRead = 1;
 		auto buffer = receiveString(peer, nBytesToRead);
@@ -93,7 +92,7 @@ namespace
 	}
 
 	template<BT::MessageType msgType>
-	BT::MessageParcel const receiveSpecificMessage(BT::Peer_t const& peer) 
+	BT::MessageParcel const receiveSpecificMessage(BT::Peer const& peer) 
 	{
 		if (receiveLengthOfMessage(peer) == 0)
 		{
@@ -121,7 +120,7 @@ namespace
 	}
 
 	template<>
-	BT::MessageParcel const receiveSpecificMessage<BT::MessageType::HAVE>(BT::Peer_t const& peer) 
+	BT::MessageParcel const receiveSpecificMessage<BT::MessageType::HAVE>(BT::Peer const& peer) 
 	{
 		if (receiveLengthOfMessage(peer) == 0)
 		{
@@ -139,7 +138,7 @@ namespace
 	}
 
 	template<>
-	BT::MessageParcel const receiveSpecificMessage<BT::MessageType::BITFIELD>(BT::Peer_t const& peer) 
+	BT::MessageParcel const receiveSpecificMessage<BT::MessageType::BITFIELD>(BT::Peer const& peer) 
 	{
 		auto msgLength = receiveLengthOfMessage(peer);
 		if (msgLength == 0)
@@ -157,7 +156,7 @@ namespace
 	}
 
 	template<>
-	BT::MessageParcel const receiveSpecificMessage<BT::MessageType::REQUEST>(BT::Peer_t const& peer) 
+	BT::MessageParcel const receiveSpecificMessage<BT::MessageType::REQUEST>(BT::Peer const& peer) 
 	{
 		if (receiveLengthOfMessage(peer) == 0)
 		{ 
@@ -174,7 +173,7 @@ namespace
 	}
 
 	template<>
-	BT::MessageParcel const receiveSpecificMessage<BT::MessageType::PIECE>(BT::Peer_t const& peer) 
+	BT::MessageParcel const receiveSpecificMessage<BT::MessageType::PIECE>(BT::Peer const& peer) 
 	{
 		if (receiveLengthOfMessage(peer) == 0)
 		{ 
@@ -191,7 +190,7 @@ namespace
 	}
 
 	template<>
-	BT::MessageParcel const receiveSpecificMessage<BT::MessageType::CANCEL>(BT::Peer_t const& peer) 
+	BT::MessageParcel const receiveSpecificMessage<BT::MessageType::CANCEL>(BT::Peer const& peer) 
 	{
 		if (receiveLengthOfMessage(peer) == 0) 
 		{
@@ -207,7 +206,7 @@ namespace
 		return  BT::MessageParcelFactory::GetCancelMessage(cancel);
 	}
 
-	void sendMessageLength(BT::Peer_t const &peer, BT::MessageParcel const &msg) 
+	void sendMessageLength(BT::Peer const &peer, BT::MessageParcel const &msg) 
 	{
 		char buffer[BT::Defaults::MaxBufferSize] = "";
 
@@ -216,42 +215,42 @@ namespace
 		peer.Send(buffer, sizeof(msgLength));
 	}
 
-	void sendMessageType(BT::Peer_t const &peer, BT::MessageParcel const &msg) 
+	void sendMessageType(BT::Peer const &peer, BT::MessageParcel const &msg) 
 	{
 		// char buffer[BT::Defaults::MaxBufferSize] = "";
 		// ??
 	}
 
-	void sendLong(BT::Peer_t const& peer, long const value) 
+	void sendLong(BT::Peer const& peer, long const value) 
 	{
 		char buffer[BT::Defaults::MaxBufferSize] = "";
 		memcpy(buffer, &value, sizeof(value));
 		peer.Send(buffer, sizeof(value));
 	}
 
-	void sendMessageAttributes(BT::Peer_t const &peer, BT::MessageParcel const &msg) 
+	void sendMessageAttributes(BT::Peer const &peer, BT::MessageParcel const &msg) 
 	{
 		sendMessageLength(peer, msg);
 		sendMessageType(peer, msg);
 	}
 
 	template<BT::MessageType msgType>
-	void sendSpecificMessage(BT::Peer_t const &peer, BT::MessageParcel const &msg) {}
+	void sendSpecificMessage(BT::Peer const &peer, BT::MessageParcel const &msg) {}
 
 	template<>
-	void sendSpecificMessage<BT::MessageType::CHOKE>(BT::Peer_t const &peer, BT::MessageParcel const &msg) 
+	void sendSpecificMessage<BT::MessageType::CHOKE>(BT::Peer const &peer, BT::MessageParcel const &msg) 
 	{
 		sendMessageAttributes(peer, msg);
 	}
 
 	template<>
-	void sendSpecificMessage<BT::MessageType::UNCHOKE>(BT::Peer_t const &peer, BT::MessageParcel const &msg) 
+	void sendSpecificMessage<BT::MessageType::UNCHOKE>(BT::Peer const &peer, BT::MessageParcel const &msg) 
 	{
 		sendMessageAttributes(peer, msg);
 	}
 
 	template<>
-	void sendSpecificMessage<BT::MessageType::INTERESTED>(BT::Peer_t const &peer, BT::MessageParcel const &msg) 
+	void sendSpecificMessage<BT::MessageType::INTERESTED>(BT::Peer const &peer, BT::MessageParcel const &msg) 
 	{
 		sendMessageLength(peer, msg);
 		if (msg.GetLength() == 0) 
@@ -262,20 +261,20 @@ namespace
 	}
 
 	template<>
-	void sendSpecificMessage<BT::MessageType::NOTINTERESTED>(BT::Peer_t const &peer, BT::MessageParcel const &msg) 
+	void sendSpecificMessage<BT::MessageType::NOTINTERESTED>(BT::Peer const &peer, BT::MessageParcel const &msg) 
 	{
 		sendMessageAttributes(peer, msg);
 	}
 
 	template<>
-	void sendSpecificMessage<BT::MessageType::HAVE>(BT::Peer_t const &peer, BT::MessageParcel const &msg) 
+	void sendSpecificMessage<BT::MessageType::HAVE>(BT::Peer const &peer, BT::MessageParcel const &msg) 
 	{
 		sendMessageAttributes(peer, msg);
 		sendLong(peer, msg.GetHave());
 	}
 
 	template<>
-	void sendSpecificMessage<BT::MessageType::BITFIELD>(BT::Peer_t const &peer, BT::MessageParcel const &msg) 
+	void sendSpecificMessage<BT::MessageType::BITFIELD>(BT::Peer const &peer, BT::MessageParcel const &msg) 
 	{
 		sendMessageAttributes(peer, msg);
 
@@ -287,7 +286,7 @@ namespace
 	}
 
 	template<>
-	void sendSpecificMessage<BT::MessageType::REQUEST>(BT::Peer_t const &peer, BT::MessageParcel const &msg) 
+	void sendSpecificMessage<BT::MessageType::REQUEST>(BT::Peer const &peer, BT::MessageParcel const &msg) 
 	{
 		sendMessageAttributes(peer, msg);
 
@@ -298,7 +297,7 @@ namespace
 	}
 
 	template<>
-	void sendSpecificMessage<BT::MessageType::PIECE>(BT::Peer_t const &peer, BT::MessageParcel const &msg) 
+	void sendSpecificMessage<BT::MessageType::PIECE>(BT::Peer const &peer, BT::MessageParcel const &msg) 
 	{
 		sendMessageAttributes(peer, msg);
 
@@ -308,7 +307,7 @@ namespace
 	}
 
 	template<>
-	void sendSpecificMessage<BT::MessageType::CANCEL>(BT::Peer_t const &peer, BT::MessageParcel const &msg) 
+	void sendSpecificMessage<BT::MessageType::CANCEL>(BT::Peer const &peer, BT::MessageParcel const &msg) 
 	{
 		sendMessageAttributes(peer, msg);
 
@@ -319,12 +318,12 @@ namespace
 	}
 }
 
-BT::Peer_t::Peer_t()
+BT::Peer::Peer()
 	: sockfd(BT::Defaults::BadFD),
 	  port(0)
 {}
 
-BT::Peer_t::Peer_t(int const& fd, std::string const& ip, unsigned int const& port) 
+BT::Peer::Peer(int const& fd, std::string const& ip, unsigned int const& port) 
      : sockfd(BT::Defaults::BadFD), 
 	   ip(ip),
 	   port(port), 
@@ -338,11 +337,11 @@ BT::Peer_t::Peer_t(int const& fd, std::string const& ip, unsigned int const& por
 		throw BadSocketDescriptor();
 }
 
-BT::Peer_t::Peer_t(std::string const& ip, unsigned int const& port)
-	: Peer_t(BT::Defaults::BadFD, ip, port) 
+BT::Peer::Peer(std::string const& ip, unsigned int const& port)
+	: Peer(BT::Defaults::BadFD, ip, port) 
 {}
 
-BT::Peer_t::Peer_t(Peer_t const& otherPeer)
+BT::Peer::Peer(Peer const& otherPeer)
 	: ip(otherPeer.ip), 
 	  port(otherPeer.port),
 	  id(otherPeer.id) 
@@ -355,19 +354,19 @@ BT::Peer_t::Peer_t(Peer_t const& otherPeer)
 		throw BadSocketDescriptor();
 }
 
-BT::Peer_t::Peer_t(BT::Peer_t&& otherPeer) 
+BT::Peer::Peer(BT::Peer&& otherPeer) 
 	: sockfd(BT::Defaults::BadFD)
 {
 	swap(*this, otherPeer);
 }
 
-BT::Peer_t& BT::Peer_t::operator=(BT::Peer_t otherPeer) 
+BT::Peer& BT::Peer::operator=(BT::Peer otherPeer) 
 {
 	std::swap(*this, otherPeer);
 	return *this;
 }
 
-void BT::swap(BT::Peer_t& first, BT::Peer_t& second)
+void BT::swap(BT::Peer& first, BT::Peer& second)
 {
 	std::swap(first.sockfd, second.sockfd);
 	std::swap(first.ip, second.ip);
@@ -375,14 +374,14 @@ void BT::swap(BT::Peer_t& first, BT::Peer_t& second)
 	std::swap(first.id, second.id);
 }
 
-BT::Peer_t::~Peer_t() 
+BT::Peer::~Peer() 
 {
 	if (sockfd != BT::Defaults::BadFD)
 		close(sockfd);
 	sockfd = BT::Defaults::BadFD;
 }
 
-void BT::Peer_t::Reset() 
+void BT::Peer::Reset() 
 {
 	if (sockfd != BT::Defaults::BadFD)
 		close(sockfd);
@@ -393,7 +392,7 @@ void BT::Peer_t::Reset()
 	id = "";
 }
 
-void BT::Peer_t::EstablishConnectionTo(Peer_t const& otherPeer) {
+void BT::Peer::EstablishConnectionTo(Peer const& otherPeer) {
 	sockfd = BT::Defaults::BadFD;
 
 	int tmpSockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -424,7 +423,7 @@ void BT::Peer_t::EstablishConnectionTo(Peer_t const& otherPeer) {
 	id = CalculateId(ip, port);
 }
 
-void BT::Peer_t::Receive(void *buf, unsigned int const count) const {
+void BT::Peer::Receive(void *buf, unsigned int const count) const {
 	memset(buf, 0, count);
 	makeSocketNonBlockable(sockfd);
 
@@ -446,12 +445,12 @@ void BT::Peer_t::Receive(void *buf, unsigned int const count) const {
 	}
 }
 
-void BT::Peer_t::Send(void const * const buf, unsigned int const count) const {
+void BT::Peer::Send(void const * const buf, unsigned int const count) const {
 	write(sockfd, buf, count);
 }
 
-BT::MessageParcel const BT::Peer_t::ReceiveMessage(BT::MessageType const msgType) const {
-	std::unordered_map<BT::MessageType, std::function<MessageParcel const(Peer_t const&)>> handlers;
+BT::MessageParcel const BT::Peer::ReceiveMessage(BT::MessageType const msgType) const {
+	std::unordered_map<BT::MessageType, std::function<MessageParcel const(Peer const&)>> handlers;
 
 	handlers[MessageType::CHOKE] = receiveSpecificMessage<MessageType::CHOKE>;
 	handlers[MessageType::UNCHOKE] = receiveSpecificMessage<MessageType::UNCHOKE>;
@@ -468,8 +467,8 @@ BT::MessageParcel const BT::Peer_t::ReceiveMessage(BT::MessageType const msgType
 	return itr->second(*this);		
 }
 
-void BT::Peer_t::SendMessage(BT::MessageParcel const& msg) const {
-	std::unordered_map<BT::MessageType, std::function<void(Peer_t const& peer, BT::MessageParcel const&)>> handlers;
+void BT::Peer::SendMessage(BT::MessageParcel const& msg) const {
+	std::unordered_map<BT::MessageType, std::function<void(Peer const& peer, BT::MessageParcel const&)>> handlers;
 
 	handlers[MessageType::CHOKE] = sendSpecificMessage<MessageType::CHOKE>;
 	handlers[MessageType::UNCHOKE] = sendSpecificMessage<MessageType::UNCHOKE>;
@@ -486,7 +485,7 @@ void BT::Peer_t::SendMessage(BT::MessageParcel const& msg) const {
 	itr->second(*this, msg);
 }
 
-std::ostream& BT::operator<<(std::ostream& os, BT::Peer_t const& peer) {
+std::ostream& BT::operator<<(std::ostream& os, BT::Peer const& peer) {
 	os << peer.id << "        " << peer.ip << ":" << peer.port;
 	return os;
 }

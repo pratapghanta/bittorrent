@@ -8,21 +8,21 @@
 
 namespace BT 
 {
-	class Peer_t;
-	using PeersList_t = std::vector<Peer_t>;
+	class Peer;
+	using PeersList_t = std::vector<Peer>;
 
-	class Peer_t 
+	class Peer 
 	{
 	public:
-		Peer_t();
-		Peer_t(int const&, std::string const&, unsigned int const&);
-		Peer_t(std::string const&, unsigned int const&);
-		Peer_t(Peer_t const& p);
-		Peer_t(Peer_t&& p);
-		Peer_t& operator=(Peer_t); 
-		~Peer_t();
+		Peer();
+		Peer(int const&, std::string const&, unsigned int const&);
+		Peer(std::string const&, unsigned int const&);
+		Peer(Peer const& p);
+		Peer(Peer&& p);
+		Peer& operator=(Peer); 
+		~Peer();
 
-		void EstablishConnectionTo(Peer_t const& otherPeer);
+		void EstablishConnectionTo(Peer const& otherPeer);
 
 		void Receive(void *buf, unsigned int const count) const;
 		void Send(void const * const buf, unsigned int const count) const;
@@ -32,8 +32,8 @@ namespace BT
 
 		std::string GetId() { return id; }
 
-		friend std::ostream& operator<<(std::ostream& os, BT::Peer_t const&);
-		friend void swap(Peer_t& first, Peer_t& second);
+		friend std::ostream& operator<<(std::ostream& os, BT::Peer const&);
+		friend void swap(Peer& first, Peer& second);
 
 	private:
 		void Reset();
@@ -45,8 +45,8 @@ namespace BT
 		std::string id;
 	};
 
-	void swap(Peer_t& first, Peer_t& second);
-	std::ostream& operator<<(std::ostream& os, BT::Peer_t const&);
+	void swap(Peer& first, Peer& second);
+	std::ostream& operator<<(std::ostream& os, BT::Peer const&);
 }
 
 #endif // !defined(PEER_HPP)

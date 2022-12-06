@@ -121,8 +121,8 @@ namespace BT {
 			std::string const& leecherIP = getIPFromSockAddr(client_addr);
 			unsigned int leecherPort = ntohs(client_addr.sin_port);
 			
-			Peer_t leecher(leecherfd, leecherIP, leecherPort);
-			Peer_t seeder(Defaults::BadFD, seederIP, port); // hack
+			Peer leecher(leecherfd, leecherIP, leecherPort);
+			Peer seeder(Defaults::BadFD, seederIP, port); // hack
 
 			LeecherHandler_t lh(torrent, seeder, leecher);
 			leecherHandlers.push_back(std::move(lh));

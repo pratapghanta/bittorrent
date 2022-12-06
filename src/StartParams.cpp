@@ -166,7 +166,7 @@ namespace BT
         else 
         {
             os << "    Leecher's peers information: " << std::endl;
-            for (Peer_t const& peer : params.peers)
+            for (Peer const& peer : params.peers)
                 os << "    " << peer << std::endl;
         }
 
@@ -208,7 +208,7 @@ namespace BT
             if (peers.size() >= Defaults::MaxConnections)
                 throwException(PeerLimitExceeded(Defaults::MaxConnections));
             auto tokens = splitIntoIPAndPort(value);
-            peers.push_back(Peer_t(tokens[0], std::stoi(tokens[1])));
+            peers.push_back(Peer(tokens[0], std::stoi(tokens[1])));
         };
     }
 

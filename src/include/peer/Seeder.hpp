@@ -34,15 +34,15 @@ namespace BT {
 
 	class Seeder_t::LeecherHandler_t {
 	public:
-		LeecherHandler_t(BT::Torrent const& t, Peer_t& seeder, Peer_t& leecher);
+		LeecherHandler_t(BT::Torrent const& t, Peer& seeder, Peer& leecher);
 		void StartTransfer();
 
 	private:
 		bool const communicatePortocolMessages();
 
 		Torrent torrent;
-		Peer_t seeder;
-		Peer_t leecher;
+		Peer seeder;
+		Peer leecher;
 	};
 }
 
