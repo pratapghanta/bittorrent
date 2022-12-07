@@ -8,17 +8,17 @@
 #include "StartParams.hpp"
 
 namespace BT {
-	class Seeder_t {
+	class Seeder {
 	public:
-		Seeder_t(Torrent const& t, unsigned int const p);
+		Seeder(Torrent const& t, unsigned int const p);
 
-		Seeder_t(Seeder_t const&) = delete;
-		Seeder_t& operator=(Seeder_t const&) = delete;
+		Seeder(Seeder const&) = delete;
+		Seeder& operator=(Seeder const&) = delete;
 
-		Seeder_t(Seeder_t&&);
-		Seeder_t& operator=(Seeder_t&&);
+		Seeder(Seeder&&);
+		Seeder& operator=(Seeder&&);
 
-		~Seeder_t();
+		~Seeder();
 
 		unsigned int const GetPort() const { return port; }
 		void StartTransfer();
@@ -28,13 +28,13 @@ namespace BT {
 		Torrent torrent;
 		unsigned int port;
 
-		class LeecherHandler_t;
-		std::vector<LeecherHandler_t> leecherHandlers;
+		class LeecherHandler;
+		std::vector<LeecherHandler> leecherHandlers;
 	};
 
-	class Seeder_t::LeecherHandler_t {
+	class Seeder::LeecherHandler {
 	public:
-		LeecherHandler_t(BT::Torrent const& t, Peer& seeder, Peer& leecher);
+		LeecherHandler(BT::Torrent const& t, Peer& seeder, Peer& leecher);
 		void StartTransfer();
 
 	private:

@@ -50,14 +50,14 @@ namespace
 	}
 }
 
-BT::Leecher_t::Leecher_t(BT::Torrent const t, Peer const& s)
+BT::Leecher::Leecher(BT::Torrent const t, Peer const& s)
 	: torrent(t), 
 	  seeder(s) 
 {
 	leecher.EstablishConnectionTo(seeder);
 }
 
-bool const BT::Leecher_t::communicatePortocolMessages() 
+bool const BT::Leecher::communicatePortocolMessages() 
 {
 	seeder.Send(BT::Defaults::HandshakeMessage.c_str(), BT::Defaults::HandshakeMessage.length());
 	seeder.Send(torrent.infoHash.c_str(), BT::Defaults::Sha1MdSize - 1);
@@ -85,7 +85,7 @@ bool const BT::Leecher_t::communicatePortocolMessages()
 	return inSameSwarm() && expectedSeeder();
 }
 
-bool const BT::Leecher_t::getPieceFromSeeder(long const interestedPiece) 
+bool const BT::Leecher::getPieceFromSeeder(long const interestedPiece) 
 {
 	auto msg = seeder.ReceiveMessage(MessageType::BITFIELD);
 
@@ -136,7 +136,7 @@ bool const BT::Leecher_t::getPieceFromSeeder(long const interestedPiece)
 	return isTransferSuccessful(torrent, interestedPiece, fileContents);
 }
 
-void BT::Leecher_t::startTransfer()
+void BT::Leecher::startTransfer()
 {
 	if (!communicatePortocolMessages())
 		return;

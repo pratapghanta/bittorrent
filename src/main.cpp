@@ -59,14 +59,14 @@ int main (int argc, char * argv[])
 
 	if(params.IsSeeder()) 
 	{
-		BT::Seeder_t s(torrent, params.seederPort);
+		BT::Seeder s(torrent, params.seederPort);
         s.StartTransfer();
 	}
 	else 
 	{
 		for (auto& seeder : params.peers) 
         {
-            BT::Leecher_t l(torrent, seeder);
+            BT::Leecher l(torrent, seeder);
             l.startTransfer();
         }
 	}

@@ -31,10 +31,10 @@ namespace {
 	}
 }
 
-BT::Seeder_t::LeecherHandler_t::LeecherHandler_t(BT::Torrent const& t, BT::Peer& seeder, BT::Peer& leecher)
+BT::Seeder::LeecherHandler::LeecherHandler(BT::Torrent const& t, BT::Peer& seeder, BT::Peer& leecher)
 	: torrent(t), seeder(std::move(seeder)), leecher(std::move(leecher)) {}
 
-bool const BT::Seeder_t::LeecherHandler_t::communicatePortocolMessages(void) {
+bool const BT::Seeder::LeecherHandler::communicatePortocolMessages(void) {
 	bool const handshakeFailed = false;
 
 	leecher.Send(BT::Defaults::HandshakeMessage.c_str(), BT::Defaults::HandshakeMessage.length());
@@ -63,7 +63,7 @@ bool const BT::Seeder_t::LeecherHandler_t::communicatePortocolMessages(void) {
 	return inSameSwarm() && isExpectedHost();
 }
 
-void BT::Seeder_t::LeecherHandler_t::StartTransfer(void) {
+void BT::Seeder::LeecherHandler::StartTransfer(void) {
 	if (!communicatePortocolMessages())
 		return;
 

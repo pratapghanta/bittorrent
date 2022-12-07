@@ -36,7 +36,7 @@ namespace BT
 		friend void swap(Peer& first, Peer& second);
 
 	private:
-		void Reset();
+		void reset();
 
 	private:
 		int sockfd;

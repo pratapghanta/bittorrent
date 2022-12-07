@@ -8,9 +8,9 @@
 #include "StartParams.hpp"
 
 namespace BT {
-	class Leecher_t {
+	class Leecher {
 	public:
-		Leecher_t(BT::Torrent const t, Peer const& seeder);
+		Leecher(BT::Torrent const t, Peer const& seeder);
 		void startTransfer();
 
 	private:

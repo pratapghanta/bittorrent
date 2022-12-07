@@ -60,12 +60,12 @@ namespace {
 }
 
 namespace BT {
-	Seeder_t::Seeder_t(Torrent const& t, unsigned int const p) 
+	Seeder::Seeder(Torrent const& t, unsigned int const p) 
 		: sockfd(Defaults::BadFD), torrent(t), port(p) {
 		leecherHandlers.reserve(Defaults::MaxConnections);
 	}
 
-	Seeder_t::Seeder_t(Seeder_t&& obj)
+	Seeder::Seeder(Seeder&& obj)
 		: sockfd (obj.sockfd),
 		  torrent(obj.torrent),
 		  port(obj.port) {
@@ -73,7 +73,7 @@ namespace BT {
 		obj.port = 0;
 	}
 
-	Seeder_t& Seeder_t::operator=(Seeder_t&& obj) {
+	Seeder& Seeder::operator=(Seeder&& obj) {
 		if (&obj == this)
 			return *this;
 
@@ -90,12 +90,12 @@ namespace BT {
 		return *this;
 	}
 
-	Seeder_t::~Seeder_t() {
+	Seeder::~Seeder() {
 		if (sockfd > 0)
 			close(sockfd);
 	}
 
-	void Seeder_t::StartTransfer() {
+	void Seeder::StartTransfer() {
 		unsigned int maxThreadsPossible = std::thread::hardware_concurrency();
 		if (maxThreadsPossible != 0 && maxThreadsPossible < Defaults::MaxConnections) {
 			Warn("Using less leechers is recommended. Max concurrent threads supported = %u", maxThreadsPossible);
@@ -124,7 +124,7 @@ namespace BT {
 			Peer leecher(leecherfd, leecherIP, leecherPort);
 			Peer seeder(Defaults::BadFD, seederIP, port); // hack
 
-			LeecherHandler_t lh(torrent, seeder, leecher);
+			LeecherHandler lh(torrent, seeder, leecher);
 			leecherHandlers.push_back(std::move(lh));
 			
 			std::thread sth([&]() { leecherHandlers[nPeers-1].StartTransfer(); });
