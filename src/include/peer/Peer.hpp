@@ -4,8 +4,6 @@
 #include <string>
 #include <vector>
 
-#include "MessageParcel.hpp"
-
 namespace BT 
 {
 	class Peer;
@@ -15,20 +13,12 @@ namespace BT
 	{
 	public:
 		Peer();
-		Peer(int const&, std::string const&, unsigned int const&);
-		Peer(std::string const&, unsigned int const&);
+		Peer(unsigned int const);
+		Peer(std::string const&, unsigned int const);
 		Peer(Peer const& p);
 		Peer(Peer&& p);
 		Peer& operator=(Peer); 
-		~Peer();
-
-		void EstablishConnectionTo(Peer const& otherPeer);
-
-		void Receive(void *buf, unsigned int const count) const;
-		void Send(void const * const buf, unsigned int const count) const;
-
-		MessageParcel const ReceiveMessage(MessageType const type) const;
-		void SendMessage(MessageParcel const& msg) const;
+		~Peer() = default;
 
 		std::string GetId() { return id; }
 
@@ -38,8 +28,7 @@ namespace BT
 	private:
 		void reset();
 
-	private:
-		int sockfd;
+	public:
 		std::string ip;
 		unsigned int port;
 		std::string id;

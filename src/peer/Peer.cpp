@@ -46,24 +46,11 @@ namespace
             : BT::CException("Unable to create a socket.") 
         {}
 	};
-
-	struct SocketNonBlockable : BT::CException 
-	{
-		SocketNonBlockable()
-            : BT::CException("Unable to make socket non-blockable.") 
-        {}
-	};
-
-	void makeSocketNonBlockable(int sockfd) 
-	{
-		int flags = fcntl(sockfd, F_GETFL, 0);
-		if (fcntl(sockfd, F_SETFL, flags | O_NONBLOCK))
-			throw SocketNonBlockable();
-	}
 }
 
 namespace BT
 {
+#if 0
 	namespace 
 	{
 		std::string receiveString(Peer const& peer, unsigned int const nBytesToRead) 
@@ -322,156 +309,62 @@ namespace BT
 			sendLong(peer, cancel.length);
 		}
 	}
+#endif
 
 	Peer::Peer()
-		: sockfd(Defaults::BadFD),
-		port(0)
+		: port(0)
 	{}
 
-	Peer::Peer(int const& fd, 
-				std::string const& ip, 
-				unsigned int const& port) 
-		: sockfd(Defaults::BadFD), 
-		ip(ip),
-		port(port), 
-		id(CalculateId(ip, port)) 
-	{
-		if (fd == Defaults::BadFD)
-		{
-			return;
-		}
+	Peer::Peer(unsigned int const port)
+		: ip("localhost"),
+		  port(port),
+		  id(CalculateId(ip, port)) 
+	{}
 
-		sockfd = dup(fd);
-		if (sockfd == Defaults::BadFD) 
-		{
-			throw BadSocketDescriptor();
-		}
-	}
-
-	Peer::Peer(std::string const& ip, unsigned int const& port)
-		: Peer(Defaults::BadFD, ip, port) 
+	Peer::Peer(std::string const& ip, unsigned int const port)
+		: ip(ip),
+		  port(port),
+		  id(CalculateId(ip, port)) 
 	{}
 
 	Peer::Peer(Peer const& otherPeer)
 		: ip(otherPeer.ip), 
-		port(otherPeer.port),
-		id(otherPeer.id) 
-	{
-		if (sockfd != Defaults::BadFD)
-		{
-			close(sockfd);
-		}
+		  port(otherPeer.port),
+		  id(otherPeer.id) 
+	{}
 
-		sockfd = dup(otherPeer.sockfd);
-		if (sockfd == Defaults::BadFD)
-		{
-			throw BadSocketDescriptor();
-		}
-	}
-
-	Peer::Peer(Peer&& otherPeer) 
-		: sockfd(Defaults::BadFD)
+	Peer::Peer(Peer&& otherPeer)
 	{
 		swap(*this, otherPeer);
 	}
 
 	Peer& Peer::operator=(Peer otherPeer) 
 	{
-		std::swap(*this, otherPeer);
+		swap(*this, otherPeer);
 		return *this;
 	}
 
 	void swap(Peer& first, Peer& second)
 	{
-		std::swap(first.sockfd, second.sockfd);
 		std::swap(first.ip, second.ip);
 		std::swap(first.port, second.port);
 		std::swap(first.id, second.id);
 	}
 
-	Peer::~Peer() 
-	{
-		if (sockfd != Defaults::BadFD)
-		{
-			close(sockfd);
-		}
-		sockfd = Defaults::BadFD;
-	}
-
 	void Peer::reset() 
 	{
-		if (sockfd != Defaults::BadFD)
-		{
-			close(sockfd);
-		}
-		sockfd = Defaults::BadFD;
 		ip = "";
 		port = 0;
 		id = "";
 	}
 
-	void Peer::EstablishConnectionTo(Peer const& otherPeer) {
-		sockfd = Defaults::BadFD;
-
-		int tmpSockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-		if (tmpSockfd < 0)
-		{
-			return;
-		}
-
-		sockaddr_in serv_addr;
-		memset((void *)&serv_addr, 0, sizeof(serv_addr));
-		serv_addr.sin_family = AF_INET;
-		serv_addr.sin_addr.s_addr = inet_addr(otherPeer.ip.c_str());
-		serv_addr.sin_port = htons(otherPeer.port);
-
-		if (connect(tmpSockfd, (sockaddr*)&serv_addr, sizeof(serv_addr)) != 0)
-		{
-			return;
-		}
-
-		sockaddr_in cli_addr;
-		socklen_t len = Defaults::IPSize - 1;
-		if (getsockname(tmpSockfd, (sockaddr*)&cli_addr, &len) == -1)
-		{
-			return;
-		}
-
-		char buffer[Defaults::IPSize] = "";
-		inet_ntop(cli_addr.sin_family, (void *)&cli_addr.sin_addr, buffer, Defaults::IPSize - 1);
-
-		sockfd = tmpSockfd;
-		ip = std::string(buffer);
-		port = ntohs(cli_addr.sin_port);
-		id = CalculateId(ip, port);
+	std::ostream& operator<<(std::ostream& os, Peer const& peer) 
+	{
+		os << peer.id << "        " << peer.ip << ":" << peer.port;
+		return os;
 	}
-
-	void Peer::Receive(void *buf, unsigned int const count) const {
-		memset(buf, 0, count);
-		makeSocketNonBlockable(sockfd);
-
-		unsigned int totalBytesRead = 0;
-		time_t beg = time(0);
-
-		while (totalBytesRead < count) {
-			auto bufPtr = &(static_cast<char*>(buf)[totalBytesRead]);
-			int const bytesRead = read(sockfd, bufPtr, 1);
-			if (bytesRead > 0) {
-				totalBytesRead += bytesRead;
-				time(&beg);
-				continue;
-			}
-
-			time_t end = time(0);
-			if (difftime(end, beg) > 2 * 60)
-				throw UnExpectedMessage();
-		}
-	}
-
-	void Peer::Send(void const * const buf, unsigned int const count) const {
-		write(sockfd, buf, count);
-	}
-
+	
+#if 0
 	MessageParcel const Peer::ReceiveMessage(MessageType const msgType) const {
 		std::unordered_map<MessageType, std::function<MessageParcel const(Peer const&)>> handlers;
 
@@ -513,9 +406,5 @@ namespace BT
 		}
 		itr->second(*this, msg);
 	}
-
-	std::ostream& operator<<(std::ostream& os, Peer const& peer) {
-		os << peer.id << "        " << peer.ip << ":" << peer.port;
-		return os;
-	}
+#endif
 }

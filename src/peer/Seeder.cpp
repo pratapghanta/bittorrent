@@ -1,7 +1,13 @@
+#include "peer/Seeder.hpp"
+
+#include <thread>
 #include <iostream>
 #include <fstream>
+#include <string>
 #include <cstring>
 #include <thread>
+#include <map>
+#include <memory>
 #include <unistd.h>
 #include <netinet/in.h>
 #include <netinet/ip.h> 
@@ -16,118 +22,128 @@
 #include "common/Defaults.hpp"
 #include "common/Helpers.hpp"
 #include "common/Logger.hpp"
-#include "peer/Peer.hpp"
-#include "peer/Seeder.hpp"
+#include "peer/BinaryFileHandler.hpp"
+#include "peer/MessageParcel.hpp"
+#include "peer/MessageParcelFactory.hpp"
+#include "socket/ConnectedSocketParcel.hpp"
+#include "socket/ConnectedSocket.hpp"
+#include "socket/IPv4Socket.hpp"
 
-using namespace std;
-
-namespace {
-	int const createServerSocket() {
-		int sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP); /* TCP */
-		if (sockfd == BT::Defaults::BadFD)
-			PrintErrorAndExit("Socket creation failed.");
-		return sockfd;
-	}
-
-	void bindServerSocket(int sockfd, unsigned int const port) {
-		sockaddr_in server_addr;
-		memset((void*) &server_addr, 0, sizeof(server_addr));
-		server_addr.sin_family = AF_INET; /* IPV4 */
-		server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-		server_addr.sin_port = htons(port);
-
-		if (::bind(sockfd, (sockaddr*) &server_addr, sizeof(server_addr)) != 0)
-			PrintErrorAndExit("Socket binding failed.");
-	}
-
-	std::string getIPFromSockAddr(sockaddr_in const& addr) {
-		char ip[BT::Defaults::IPSize] = "";
-		inet_ntop(addr.sin_family, (void*) &addr.sin_addr, ip, BT::Defaults::IPSize);
-		return std::string(ip);
-	}
-
-	std::string getSeederIP(int const sockfd) {
-		sockaddr_in sin;		
-		memset((void*) &sin, 0, sizeof(sin));
-
-		socklen_t len = sizeof(sockaddr_in);
-		if (getsockname(sockfd, (sockaddr*) &sin, &len) != -1)
-			return getIPFromSockAddr(sin);
-
-		PrintErrorAndExit("Unable to get seeder IP.");
-		return std::string(""); // Unreachable code. Might not have RVO :(
+namespace 
+{
+	std::string const getDataFilename(std::string const& torrentFilename) 
+	{
+		unsigned int endPos = torrentFilename.rfind(BT::Defaults::TorrentFileExtension);
+		return torrentFilename.substr(0, endPos);
 	}
 }
 
-namespace BT {
-	Seeder::Seeder(Torrent const& t, unsigned int const p) 
-		: sockfd(Defaults::BadFD), torrent(t), port(p) {
-		leecherHandlers.reserve(Defaults::MaxConnections);
+namespace BT 
+{
+	Seeder::Seeder(Torrent const& t, unsigned int const port) 
+		: torrent(t)
+	{
+		socket = IPv4ServerSocket::CreateTCPSocket(port);
+		socket->Register(this);
+		socket->AcceptConnection();
 	}
 
-	Seeder::Seeder(Seeder&& obj)
-		: sockfd (obj.sockfd),
-		  torrent(obj.torrent),
-		  port(obj.port) {
-		obj.sockfd = BT::Defaults::BadFD;
-		obj.port = 0;
+	Seeder::~Seeder() 
+	{
 	}
 
-	Seeder& Seeder::operator=(Seeder&& obj) {
-		if (&obj == this)
-			return *this;
-
-		if (sockfd > 0)
-			close(sockfd);
-
-		sockfd = obj.sockfd;
-		torrent = obj.torrent;
-		port = obj.port;
-
-		obj.sockfd = BT::Defaults::BadFD;
-		obj.port = 0;
-
-		return *this;
-	}
-
-	Seeder::~Seeder() {
-		if (sockfd > 0)
-			close(sockfd);
-	}
-
-	void Seeder::StartTransfer() {
-		unsigned int maxThreadsPossible = std::thread::hardware_concurrency();
-		if (maxThreadsPossible != 0 && maxThreadsPossible < Defaults::MaxConnections) {
-			Warn("Using less leechers is recommended. Max concurrent threads supported = %u", maxThreadsPossible);
-		}
+	void Seeder::OnAcceptConnection(ConnectedSocketParcel const& parcel)
+	{
+		ConnectedSocket connectedSocket (parcel);
+		#if 0
 		
-		sockfd = createServerSocket();
-		bindServerSocket(sockfd, port);
+		LeecherHandler lh(torrent, seeder, leecher);
+		leecherHandlers.push_back(std::move(lh));
+		
+		std::thread sth([&]() { leecherHandlers[0].StartTransfer(); });
+		#endif
+	}
 
-		listen(sockfd, Defaults::MaxConnections);
 
-		std::string const& seederIP = getSeederIP(sockfd);
-		unsigned int nPeers = 0;
-		while(nPeers < Defaults::MaxConnections) {
-			sockaddr_in client_addr;
-			socklen_t clilen = sizeof(client_addr);
+	bool const Seeder::communicatePortocolMessages(void) 
+	{
+		#if 0
+		bool const handshakeFailed = false;
 
-			int leecherfd = accept(sockfd, (sockaddr *) &client_addr, &clilen);
-			if (leecherfd == Defaults::BadFD)
-				PrintErrorAndExit("Unable to connect to leecher.");
+		leecher.Send(Defaults::HandshakeMessage.c_str(), Defaults::HandshakeMessage.length());
+		leecher.Send(torrent.infoHash.c_str(), Defaults::Sha1MdSize - 1);
+		leecher.Send(seeder.GetId().c_str(), Defaults::Sha1MdSize - 1);
 
-			nPeers++;
+		char buffer[Defaults::MaxBufferSize] = "";
+		memset(buffer, 0, Defaults::MaxBufferSize);
+		leecher.Receive(buffer, Defaults::HandshakeMessage.length());
 
-			std::string const& leecherIP = getIPFromSockAddr(client_addr);
-			unsigned int leecherPort = ntohs(client_addr.sin_port);
-			
-			Peer leecher(leecherfd, leecherIP, leecherPort);
-			Peer seeder(Defaults::BadFD, seederIP, port); // hack
+		if (std::string(buffer).compare(Defaults::HandshakeMessage) != 0)
+			return handshakeFailed;
 
-			LeecherHandler lh(torrent, seeder, leecher);
-			leecherHandlers.push_back(std::move(lh));
-			
-			std::thread sth([&]() { leecherHandlers[nPeers-1].StartTransfer(); });
+		auto inSameSwarm = [&]() {
+			memset(buffer, 0, Defaults::MaxBufferSize);
+			leecher.Receive(buffer, Defaults::Sha1MdSize - 1);
+			return torrent.infoHash.compare(buffer) == 0;
+		};
+
+		auto isExpectedHost = [&]() {
+			memset(buffer, 0, Defaults::MaxBufferSize);
+			leecher.Receive(buffer, Defaults::Sha1MdSize - 1);
+			return leecher.GetId().compare(buffer) == 0;
+		};
+
+		return inSameSwarm() && isExpectedHost();
+		#endif
+		return true;
+	}
+
+	void Seeder::StartTransfer(void) 
+	{
+		if (!communicatePortocolMessages())
+			return;
+
+		long totalBytesTransferred = 0;
+
+		std::string const avaliablePieces(torrent.numOfPieces, '1');
+		leecher.SendMessage(MessageParcelFactory::GetBitfieldMessage(avaliablePieces));
+
+		auto msg = leecher.ReceiveMessage(MessageType::INTERESTED);
+		while (msg.IsInterested()) {
+			leecher.SendMessage(MessageParcelFactory::GetUnChokedMessage());
+
+			auto requestMsg = leecher.ReceiveMessage(MessageType::REQUEST);
+			RequestParcel const request = requestMsg.GetRequest();
+
+			CBinaryFileHandler fileHndl(getDataFilename(torrent.filename));
+			fileHndl.Seek((request.index * request.length) + request.begin);
+
+			long block = 0;
+			long bytesTransfered = 0;
+			while (bytesTransfered < request.length)
+			{
+				if (bytesTransfered % (Defaults::BlockSize) == 0)
+				{
+					block++;
+
+					PieceParcel piece(request.index, bytesTransfered + 1, nullptr);
+					MessageParcel const& pieceMsg = MessageParcelFactory::GetPieceMessage(piece);
+					leecher.SendMessage(pieceMsg);
+
+					auto keepAlive = leecher.ReceiveMessage(MessageType::INTERESTED);
+				}
+
+				std::string const& data = fileHndl.Get();
+				if (data.empty())
+					break;
+				leecher.Send(data.c_str(), data.length());
+				bytesTransfered += data.length();
+			}
+
+			totalBytesTransferred += bytesTransfered;
+
+			msg = leecher.ReceiveMessage(MessageType::INTERESTED);
+			if (msg.IsKeepAlive()) usleep(1000000);
 		}
 	}
 }

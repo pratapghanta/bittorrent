@@ -5,10 +5,10 @@
 
 namespace BT 
 {
-    class IServerSocket : public ISocket
+    class IServerSocket
     {
     public:
-        virtual void AcceptClients(unsigned int const) = 0;
+        virtual void AcceptConnection() = 0;
     };
 }
 

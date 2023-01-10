@@ -1,20 +1,35 @@
 #include "socket/IPv4Socket.hpp"
 
+#include <iostream>
+#include <fstream>
+#include <cstring>
+#include <thread>
+#include <unistd.h>
+#include <netinet/in.h>
+#include <netinet/ip.h> 
+#include <netinet/ip_icmp.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <signal.h>
+#include <openssl/sha.h>
+
 #include "common/Defaults.hpp"
 #include "common/Helpers.hpp"
+#include "socket/ConnectedSocketParcel.hpp"
 
-#if defined(_DEBUG)
-#define DEBUG_IPV4_SERVER_SOCKET
-#endif // defined(_DEBUG)
-
-namespace {
-    std::string getIPv4AddrFromSockaddr(sockaddr_in& sin) {
+namespace 
+{
+    std::string getIPv4AddrFromSockaddr(sockaddr_in& addr) 
+    {
         char ip[BT::Defaults::IPSize] = "";
         inet_ntop(addr.sin_family, (void*) &addr.sin_addr, ip, BT::Defaults::IPSize);
         return ip;
     }
 
-    std::string getIPv4AddrFromSocket(int const sockfd) {
+    std::string getIPv4AddrFromSocket(int const sockfd) 
+    {
         if (sockfd == BT::Defaults::BadFD) {
             return "";
         }
@@ -22,96 +37,104 @@ namespace {
         sockaddr_in sin;        
         socklen_t len = sizeof(sockaddr_in);
         memset((void*) &sin, 0, sizeof(sin));
-        if (getsockname(sockfd, (sockaddr*) &sin, &len) == -1) {
+        if (getsockname(sockfd, (sockaddr*) &sin, &len) == -1) 
+        {
             PrintErrorAndExit("Unable to determine IP address associated with the socket.");            
         }
 
         return getIPv4AddrFromSockaddr(sin);
     }
 
-    void bindSocket(int const sockfd) {
-        sockaddr_in server_addr;
-        memset((void*) &server_addr, 0, sizeof(server_addr));
-        server_addr.sin_family = AF_INET;
-        server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-        server_addr.sin_port = htons(mListeningPort);
+    void bindIPv4Socket(int const sockfd, unsigned int const port) 
+    {
+        sockaddr_in sin;
+        memset((void*) &sin, 0, sizeof(sin));
+        sin.sin_family = AF_INET;
+        sin.sin_addr.s_addr = htonl(INADDR_ANY);
+        sin.sin_port = htons(port);
 
-        if (::bind(sockfd, (sockaddr*) &server_addr, sizeof(server_addr)) != 0) {
+        if (::bind(sockfd, (sockaddr*) &sin, sizeof(sin)) != 0) 
+        {
             PrintErrorAndExit("Socket binding failed.");
         }
     }
 }
 
-namespace BT {
+namespace BT 
+{
     IPv4ServerSocket::IPv4ServerSocket()
-        : mSockfd(BT::Defaults::BadFD),
-          mListeningPort(0) {}
+        : listenSockfd(BT::Defaults::BadFD),
+          listenPort(0) {}
 
-    IPv4ServerSocket(IPv4ServerSocket&& other)
-        : mSockfd(BT::Defaults::BadFD) {
-        mSockfd = other.mSockfd;
-        mListeningPort = other.mListeningPort;
-
-        other.mSockfd = BT::Defaults::BadFD;
+    IPv4ServerSocket::IPv4ServerSocket(IPv4ServerSocket&& other)
+        : listenSockfd(other.listenSockfd),
+          listenPort(other.listenPort) 
+    {
+        other.listenSockfd = BT::Defaults::BadFD;
     }
 
-    IPv4ServerSocket& operator=(IPv4ServerSocket&& other) {
-        if (this == &other) {
+    IPv4ServerSocket& IPv4ServerSocket::operator=(IPv4ServerSocket&& other) 
+    {
+        if (this == &other) 
+        {
             return *this;
         }
 
-        mSockfd = other.mSockfd;
-        mListeningPort = other.mListeningPort;
-
-        other.mSockfd = BT::Defaults::BadFD;
-    }
-
-    ~IPv4ServerSocket() {
-        Close();
-    }
-
-    IPv4ServerSocket& IPv4ServerSocket::CreateTCPSocket(unsigned int port) {
-        mListeningPort = port;
-        mSockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-        mIP = getIPv4AddrFromSocket(mSockfd);
-
-        bindSocket(mSockfd);
-
-#if defined(DEBUG_IPV4_SERVER_SOCKET)
-        Trace("Server: IP: %s, Port: %u, sockfd: %d", mIP.c_str(), mListeningPort, mSockfd);
-#endif // defined(DEBUG_IPV4_SERVER_SOCKET)
-
+        listenSockfd = other.listenSockfd;
+        listenPort = other.listenPort;
+        other.listenSockfd = BT::Defaults::BadFD;
         return *this;
     }
 
-    void IPv4ServerSocket::AcceptClients(unsigned int const maxConnections) {
-        listen(sockfd, maxConnections);
-
-        unsigned int nPeers = 0;
-        while(nPeers < maxConnections) {
-            sockaddr_in client_addr;
-            socklen_t clilen = sizeof(client_addr);
-            int peerfd = accept(mSockfd, (sockaddr *) &client_addr, &clilen);
-            if (peerfd == Defaults::BadFD)
-                PrintErrorAndExit("Unable to connect to leecher.");
-
-            nPeers++;
-
-            std::string const& peerIP = getIPv4AddrFromSocket(client_addr);
-            unsigned int peerPort = ntohs(client_addr.sin_port);
-
-            // notify observers about the incoming client and forget about it.
-        }
+    IPv4ServerSocket::~IPv4ServerSocket() 
+    {
+        Close();
     }
 
-    virtual void Send() {}
+    std::unique_ptr<IPv4ServerSocket> IPv4ServerSocket::CreateTCPSocket(unsigned int const port) 
+    {
+        std::unique_ptr<IPv4ServerSocket> s { new IPv4ServerSocket() };
+        s->listenSockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+        s->ip = getIPv4AddrFromSocket(s->listenSockfd);
+        s->listenPort = port;
 
-    virtual void Receive() {}
+        bindIPv4Socket(s->listenSockfd, s->listenPort);
+        listen(s->listenSockfd, Defaults::MaxConnections);
 
-    virtual void Close() {
-        if (mSockfd > 0) {
-            close(mSockfd);
+        return s;
+    }
+
+    void IPv4ServerSocket::Close() 
+    {
+        if (listenSockfd > 0) 
+        {
+            close(listenSockfd);
         }
-        mSockfd = BT::Defaults::BadFD;
+        listenSockfd = BT::Defaults::BadFD;
+    }
+
+    void IPv4ServerSocket::AcceptConnection() 
+    {
+        unsigned int connections = 0;
+        while (connections < Defaults::MaxConnections)
+        {
+            sockaddr_in client_addr;
+            socklen_t clilen = sizeof(client_addr);
+            int connectedSockfd = accept(listenSockfd, (sockaddr *) &client_addr, &clilen);
+            if (connectedSockfd == Defaults::BadFD)
+            {
+                PrintErrorAndExit("Unable to accept a connection.");
+            }
+        
+            ConnectedSocketParcel parcel;
+            parcel.fromIp = ip;
+            parcel.fromPort = listenPort;
+            parcel.toIp = getIPv4AddrFromSockaddr(client_addr);
+            parcel.toPort = ntohs(client_addr.sin_port);
+            parcel.connectedSockfd = connectedSockfd;
+            OnAcceptConnection(parcel);
+
+            connections++;    
+        }
     }
 }

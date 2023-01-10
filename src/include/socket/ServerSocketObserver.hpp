@@ -5,26 +5,19 @@
 
 namespace BT 
 {
-    struct ConnectedSocketParcel
-    {
-        std::string mIP;
-        std::string mPort;
-        std::string mSockfd;
-    };
-
+    struct ConnectedSocketParcel;
     class IServerSocketObservable;
     class IServerSocketObserver 
     {
     public:
         IServerSocketObserver() = default;
-        IServerSocketObserver(IServerSocketObservable* observablePtr);
+        IServerSocketObserver(IServerSocketObservable* observable);
         virtual ~IServerSocketObserver();
 
-        // Callback that must be invoked by IServerSocketObservable
-        virtual void OnClientConnected(ConnectedSocketParcel const&) const = 0;
+        virtual void OnAcceptConnection(ConnectedSocketParcel const&) = 0;
 
     private:
-        IServerSocketObservable* mObservablePtr;
+        IServerSocketObservable* observable;
     };
 }
 

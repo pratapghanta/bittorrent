@@ -18,7 +18,7 @@
 #include "peer/Leecher.hpp"
 #include "peer/MessageParcel.hpp"
 #include "peer/MessageParcelFactory.hpp"
-#include "peer/Peer.hpp"
+#include "socket/IPv4Socket.hpp"
 
 namespace 
 {
@@ -50,105 +50,124 @@ namespace
 	}
 }
 
-BT::Leecher::Leecher(BT::Torrent const t, Peer const& s)
-	: torrent(t), 
-	  seeder(s) 
+namespace BT
 {
-	leecher.EstablishConnectionTo(seeder);
-}
-
-bool const BT::Leecher::communicatePortocolMessages() 
-{
-	seeder.Send(BT::Defaults::HandshakeMessage.c_str(), BT::Defaults::HandshakeMessage.length());
-	seeder.Send(torrent.infoHash.c_str(), BT::Defaults::Sha1MdSize - 1);
-	seeder.Send(leecher.GetId().c_str(), BT::Defaults::Sha1MdSize - 1);
-
-	char buffer[BT::Defaults::MaxBufferSize] = "";
-	seeder.Receive(buffer, BT::Defaults::HandshakeMessage.length());
-	if (BT::Defaults::HandshakeMessage.compare(buffer) != 0)
-		return false;
-
-	auto inSameSwarm = [&]() 
+	Leecher::Leecher(Torrent const t, Peer const& s)
+		: torrent(t), 
+		  seeder(s) 
 	{
-		memset(buffer, 0, BT::Defaults::MaxBufferSize);
-		seeder.Receive(buffer, BT::Defaults::Sha1MdSize - 1);
-		return torrent.infoHash.compare(buffer) == 0;
-	};
+		socket = IPv4ClientSocket::CreateTCPSocket();
+		socket->Register(this);
 
-	auto expectedSeeder = [&]() 
-	{
-		memset(buffer, 0, BT::Defaults::MaxBufferSize);
-		seeder.Receive(buffer, BT::Defaults::Sha1MdSize - 1);
-		return seeder.GetId().compare(buffer) == 0;
-	};
-
-	return inSameSwarm() && expectedSeeder();
-}
-
-bool const BT::Leecher::getPieceFromSeeder(long const interestedPiece) 
-{
-	auto msg = seeder.ReceiveMessage(MessageType::BITFIELD);
-
-	if (!isPieceAvailableAtSeeder(msg, interestedPiece)) 
-	{
-		seeder.SendMessage(MessageParcelFactory::GetNotInterestedMessage());
-		return false;
+		socket->ConnectToServer(seeder.ip, seeder.port);
 	}
 
-	seeder.SendMessage(MessageParcelFactory::GetInterestedMessage());
-	msg = seeder.ReceiveMessage(MessageType::CHOKE); /* Expecting choke/unchoke */
-	if (msg.IsChoked()) 
-		return false;
-
-	int const begin = 0;
-	auto requestDetails = BT::RequestParcel(interestedPiece, begin, torrent.pieceLength);
-	seeder.SendMessage(MessageParcelFactory::GetRequestMessage(requestDetails));
-
-	auto isEndOfPiece = [&](long const currPos) 
+	void Leecher::OnConnect(ConnectedSocketParcel const& parcel)
 	{
-		return currPos >= torrent.pieceLength;
-	};
-	
-	auto isEndOfDataFile = [&](long const currPos) 
-	{
-		return (interestedPiece * torrent.pieceLength) + begin + currPos >= torrent.fileLength;
-	};
+		// Leecher has connected socket. So, it can use it to transfer data
+	}
 
-	std::string fileContents;
-	while (!isEndOfPiece(fileContents.length()) && !isEndOfDataFile(fileContents.length())) 
+	bool const Leecher::communicatePortocolMessages() 
 	{
-		if (fileContents.length() % BT::Defaults::BlockSize == 0)
+#if 0		
+		seeder.Send(Defaults::HandshakeMessage.c_str(), Defaults::HandshakeMessage.length());
+		seeder.Send(torrent.infoHash.c_str(), Defaults::Sha1MdSize - 1);
+		seeder.Send(leecher.GetId().c_str(), Defaults::Sha1MdSize - 1);
+
+		char buffer[Defaults::MaxBufferSize] = "";
+		seeder.Receive(buffer, Defaults::HandshakeMessage.length());
+		if (Defaults::HandshakeMessage.compare(buffer) != 0)
+			return false;
+
+		auto inSameSwarm = [&]() 
 		{
-			auto pieceMsg = seeder.ReceiveMessage(MessageType::PIECE);
-			if (!(pieceMsg.GetPiece() == BT::PieceParcel(interestedPiece, fileContents.length(), nullptr)))
-				return false;
-			seeder.SendMessage(MessageParcelFactory::GetKeepAliveMessage());
+			memset(buffer, 0, Defaults::MaxBufferSize);
+			seeder.Receive(buffer, Defaults::Sha1MdSize - 1);
+			return torrent.infoHash.compare(buffer) == 0;
+		};
+
+		auto expectedSeeder = [&]() 
+		{
+			memset(buffer, 0, Defaults::MaxBufferSize);
+			seeder.Receive(buffer, Defaults::Sha1MdSize - 1);
+			return seeder.GetId().compare(buffer) == 0;
+		};
+
+		return inSameSwarm() && expectedSeeder();
+#endif
+		return true;
+	}
+
+	bool const Leecher::getPieceFromSeeder(long const interestedPiece) 
+	{
+#if 0
+		auto msg = seeder.ReceiveMessage(MessageType::BITFIELD);
+
+		if (!isPieceAvailableAtSeeder(msg, interestedPiece)) 
+		{
+			seeder.SendMessage(MessageParcelFactory::GetNotInterestedMessage());
+			return false;
 		}
 
-		char dataBuf[2] = "\0";
-		seeder.Receive(dataBuf, 1);
-		fileContents += std::string(dataBuf);
+		seeder.SendMessage(MessageParcelFactory::GetInterestedMessage());
+		msg = seeder.ReceiveMessage(MessageType::CHOKE); /* Expecting choke/unchoke */
+		if (msg.IsChoked()) 
+			return false;
+
+		int const begin = 0;
+		auto requestDetails = RequestParcel(interestedPiece, begin, torrent.pieceLength);
+		seeder.SendMessage(MessageParcelFactory::GetRequestMessage(requestDetails));
+
+		auto isEndOfPiece = [&](long const currPos) 
+		{
+			return currPos >= torrent.pieceLength;
+		};
+		
+		auto isEndOfDataFile = [&](long const currPos) 
+		{
+			return (interestedPiece * torrent.pieceLength) + begin + currPos >= torrent.fileLength;
+		};
+
+		std::string fileContents;
+		while (!isEndOfPiece(fileContents.length()) && !isEndOfDataFile(fileContents.length())) 
+		{
+			if (fileContents.length() % Defaults::BlockSize == 0)
+			{
+				auto pieceMsg = seeder.ReceiveMessage(MessageType::PIECE);
+				if (!(pieceMsg.GetPiece() == PieceParcel(interestedPiece, fileContents.length(), nullptr)))
+					return false;
+				seeder.SendMessage(MessageParcelFactory::GetKeepAliveMessage());
+			}
+
+			char dataBuf[2] = "\0";
+			seeder.Receive(dataBuf, 1);
+			fileContents += std::string(dataBuf);
+		}
+
+		CBinaryFileHandler fileHndl(getSaveFilenameForPiece(torrent.filename, interestedPiece));
+		fileHndl.Put(fileContents);
+
+		return isTransferSuccessful(torrent, interestedPiece, fileContents);
+#endif
+		return true;
 	}
 
-	BT::CBinaryFileHandler fileHndl(getSaveFilenameForPiece(torrent.filename, interestedPiece));
-	fileHndl.Put(fileContents);
-
-	return isTransferSuccessful(torrent, interestedPiece, fileContents);
-}
-
-void BT::Leecher::startTransfer()
-{
-	if (!communicatePortocolMessages())
-		return;
-
-	long interestedPiece = 1;
-
-	bool const isTransferred = getPieceFromSeeder(interestedPiece);
-	if (isTransferred)
+	void Leecher::startTransfer()
 	{
-		/* Broadcast to all other peers */
-		/* Print to log about the downloaded piece */
-		/* Synchronize threads such that this piece is not downloaded again */
-		seeder.SendMessage(MessageParcelFactory::GetNotInterestedMessage());
+#if 0
+		if (!communicatePortocolMessages())
+			return;
+
+		long interestedPiece = 1;
+
+		bool const isTransferred = getPieceFromSeeder(interestedPiece);
+		if (isTransferred)
+		{
+			/* Broadcast to all other peers */
+			/* Print to log about the downloaded piece */
+			/* Synchronize threads such that this piece is not downloaded again */
+			seeder.SendMessage(MessageParcelFactory::GetNotInterestedMessage());
+		}
+#endif
 	}
 }

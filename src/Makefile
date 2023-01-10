@@ -40,20 +40,25 @@ SRC_MODULES      = common                   \
                    socket                   \
                    torrent
 
-SRC_FILES        = common/Helpers.cpp               \
-				   common/Logger.cpp                \
-  				   peer/BinaryFileHandler.cpp       \
-   				   peer/Leecher.cpp                 \
-				   peer/LeecherHandler.cpp          \
-				   peer/MessageParcel.cpp           \
-				   peer/MessageParcelFactory.cpp    \
-				   peer/Peer.cpp                    \
-				   peer/PieceParcel.cpp             \
-				   peer/RequestParcel.cpp           \
-				   peer/Seeder.cpp                  \
-				   socket/ServerSocketObserver.cpp  \
-				   torrent/MinimalTorrentParser.cpp \
-				   torrent/Torrent.cpp              \
+SRC_FILES        = common/Helpers.cpp                 \
+				   common/Logger.cpp                  \
+  				   peer/BinaryFileHandler.cpp         \
+   				   peer/Leecher.cpp                   \
+				   peer/MessageParcel.cpp             \
+				   peer/MessageParcelFactory.cpp      \
+				   peer/Peer.cpp                      \
+				   peer/PieceParcel.cpp               \
+				   peer/RequestParcel.cpp             \
+				   peer/Seeder.cpp                    \
+				   socket/ClientSocketObservable.cpp  \
+				   socket/ClientSocketObserver.cpp    \
+				   socket/ConnectedSocket.cpp         \
+				   socket/IPv4ClientSocket.cpp        \
+				   socket/IPv4ServerSocket.cpp        \
+				   socket/ServerSocketObservable.cpp  \
+				   socket/ServerSocketObserver.cpp    \
+				   torrent/MinimalTorrentParser.cpp   \
+				   torrent/Torrent.cpp                \
                    StartParams.cpp
 
 SRC_OBJS          = $(patsubst %.cpp, %.o, $(SRC_FILES))

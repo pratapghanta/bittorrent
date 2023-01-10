@@ -1,9 +1,9 @@
-#include "socket/ServerSocketObserver.hpp"
-#include "socket/ServerSocketObservable.hpp"
+#include "socket/ClientSocketObserver.hpp"
+#include "socket/ClientSocketObservable.hpp"
 
 namespace BT
 {
-    IServerSocketObserver::IServerSocketObserver(IServerSocketObservable* observable)
+    IClientSocketObserver::IClientSocketObserver(IClientSocketObservable* observable)
         : observable(observable)
     {
         if (observable != nullptr)
@@ -12,7 +12,7 @@ namespace BT
         }
     }
 
-    IServerSocketObserver::~IServerSocketObserver()
+    IClientSocketObserver::~IClientSocketObserver()
     {
         if (observable != nullptr)
         {

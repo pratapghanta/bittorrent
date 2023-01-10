@@ -31,6 +31,20 @@ namespace {
 		}
 		return data;
 	}
+
+	void startAsSeeder(BT::StartParams const& params, BT::Torrent const& torrent)
+	{
+		BT::Seeder s(torrent, params.seederPort);
+	}
+
+	void startAsLeecher(BT::StartParams const& params, BT::Torrent const& torrent)
+	{
+		for (auto& seeder : params.peers) 
+        {
+            BT::Leecher l(torrent, seeder);
+            l.startTransfer();
+        }
+	}
 }
 
 int main (int argc, char * argv[]) 
@@ -59,18 +73,11 @@ int main (int argc, char * argv[])
 
 	if(params.IsSeeder()) 
 	{
-		BT::Seeder s(torrent, params.seederPort);
-        s.StartTransfer();
+		startAsSeeder(params, torrent);
+		return 0;
 	}
-	else 
-	{
-		for (auto& seeder : params.peers) 
-        {
-            BT::Leecher l(torrent, seeder);
-            l.startTransfer();
-        }
-	}
-	
+
+	startAsLeecher(params, torrent);	
 	return 0;
 }
 
