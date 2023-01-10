@@ -18,9 +18,9 @@ namespace {
 
 
     std::string getSHA1Hash(/* IN */ char const * const buffer) {
-        char hashValue[BT::Defaults::Sha1MdSize] = "";
+        char hashValue[BT::Defaults::Sha1MdSize+1] = "";
         SHA1((unsigned char *)buffer, std::string(buffer).length(), (unsigned char *)hashValue);
-        hashValue[BT::Defaults::Sha1MdSize - 1] = '\0';
+        hashValue[BT::Defaults::Sha1MdSize] = '\0';
         return std::string(hashValue);
     }
 }

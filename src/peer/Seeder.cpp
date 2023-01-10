@@ -25,8 +25,8 @@
 #include "peer/BinaryFileHandler.hpp"
 #include "peer/MessageParcel.hpp"
 #include "peer/MessageParcelFactory.hpp"
+#include "peer/MessagingSocket.hpp"
 #include "socket/ConnectedSocketParcel.hpp"
-#include "socket/ConnectedSocket.hpp"
 #include "socket/IPv4Socket.hpp"
 
 namespace 
@@ -54,65 +54,64 @@ namespace BT
 
 	void Seeder::OnAcceptConnection(ConnectedSocketParcel const& parcel)
 	{
-		ConnectedSocket connectedSocket (parcel);
-		#if 0
-		
-		LeecherHandler lh(torrent, seeder, leecher);
-		leecherHandlers.push_back(std::move(lh));
-		
-		std::thread sth([&]() { leecherHandlers[0].StartTransfer(); });
-		#endif
+		MessagingSocket socket (parcel);
+		std::thread th([&]() { 
+			startTransfer(socket); 
+		});
+		th.detach();
 	}
 
 
-	bool const Seeder::communicatePortocolMessages(void) 
+	bool Seeder::communicatePortocolMessages(MessagingSocket const& socket) 
 	{
-		#if 0
-		bool const handshakeFailed = false;
+		using namespace BT::Defaults;
 
-		leecher.Send(Defaults::HandshakeMessage.c_str(), Defaults::HandshakeMessage.length());
-		leecher.Send(torrent.infoHash.c_str(), Defaults::Sha1MdSize - 1);
-		leecher.Send(seeder.GetId().c_str(), Defaults::Sha1MdSize - 1);
+		socket.Send(HandshakeMessage.c_str(), HandshakeMessage.length());
+		socket.Send(torrent.infoHash.c_str(), Sha1MdSize);
+		socket.Send(socket.GetFromId().c_str(), Sha1MdSize);
 
-		char buffer[Defaults::MaxBufferSize] = "";
-		memset(buffer, 0, Defaults::MaxBufferSize);
-		leecher.Receive(buffer, Defaults::HandshakeMessage.length());
+		char buffer[MaxBufferSize] = "";
+		memset(buffer, 0, MaxBufferSize);
+		socket.Receive(buffer, HandshakeMessage.length());
 
-		if (std::string(buffer).compare(Defaults::HandshakeMessage) != 0)
-			return handshakeFailed;
+		if (std::string(buffer).compare(HandshakeMessage) != 0)
+		{
+			return false;
+		}
 
 		auto inSameSwarm = [&]() {
-			memset(buffer, 0, Defaults::MaxBufferSize);
-			leecher.Receive(buffer, Defaults::Sha1MdSize - 1);
+			memset(buffer, 0, MaxBufferSize);
+			socket.Receive(buffer, Sha1MdSize);
 			return torrent.infoHash.compare(buffer) == 0;
 		};
 
 		auto isExpectedHost = [&]() {
-			memset(buffer, 0, Defaults::MaxBufferSize);
-			leecher.Receive(buffer, Defaults::Sha1MdSize - 1);
-			return leecher.GetId().compare(buffer) == 0;
+			memset(buffer, 0, MaxBufferSize);
+			socket.Receive(buffer, Sha1MdSize);
+			return socket.GetToId().compare(buffer) == 0;
 		};
 
 		return inSameSwarm() && isExpectedHost();
-		#endif
-		return true;
 	}
 
-	void Seeder::StartTransfer(void) 
+	void Seeder::startTransfer(MessagingSocket const& socket) 
 	{
-		if (!communicatePortocolMessages())
+		if (!communicatePortocolMessages(socket))
+		{
 			return;
+		}
 
 		long totalBytesTransferred = 0;
 
 		std::string const avaliablePieces(torrent.numOfPieces, '1');
-		leecher.SendMessage(MessageParcelFactory::GetBitfieldMessage(avaliablePieces));
+		socket.SendMessage(MessageParcelFactory::GetBitfieldMessage(avaliablePieces));
 
-		auto msg = leecher.ReceiveMessage(MessageType::INTERESTED);
-		while (msg.IsInterested()) {
-			leecher.SendMessage(MessageParcelFactory::GetUnChokedMessage());
+		auto msg = socket.ReceiveMessage(MessageType::INTERESTED);
+		while (msg.IsInterested()) 
+		{
+			socket.SendMessage(MessageParcelFactory::GetUnChokedMessage());
 
-			auto requestMsg = leecher.ReceiveMessage(MessageType::REQUEST);
+			auto requestMsg = socket.ReceiveMessage(MessageType::REQUEST);
 			RequestParcel const request = requestMsg.GetRequest();
 
 			CBinaryFileHandler fileHndl(getDataFilename(torrent.filename));
@@ -128,21 +127,21 @@ namespace BT
 
 					PieceParcel piece(request.index, bytesTransfered + 1, nullptr);
 					MessageParcel const& pieceMsg = MessageParcelFactory::GetPieceMessage(piece);
-					leecher.SendMessage(pieceMsg);
+					socket.SendMessage(pieceMsg);
 
-					auto keepAlive = leecher.ReceiveMessage(MessageType::INTERESTED);
+					auto keepAlive = socket.ReceiveMessage(MessageType::INTERESTED);
 				}
 
 				std::string const& data = fileHndl.Get();
 				if (data.empty())
 					break;
-				leecher.Send(data.c_str(), data.length());
+				socket.Send(data.c_str(), data.length());
 				bytesTransfered += data.length();
 			}
 
 			totalBytesTransferred += bytesTransfered;
 
-			msg = leecher.ReceiveMessage(MessageType::INTERESTED);
+			msg = socket.ReceiveMessage(MessageType::INTERESTED);
 			if (msg.IsKeepAlive()) usleep(1000000);
 		}
 	}

@@ -4,6 +4,7 @@
 #include <memory>
 
 #include "peer/Peer.hpp"
+#include "peer/MessagingSocket.hpp"
 #include "socket/ClientSocketObservable.hpp"
 #include "socket/ClientSocketObserver.hpp"
 #include "torrent/Torrent.hpp"
@@ -15,19 +16,17 @@ namespace BT
 	{
 	public:
 		Leecher(BT::Torrent const t, Peer const& seeder);
-		void startTransfer();
-
+		
 		// Callbacks from IClientSocketObserver
 		virtual void OnConnect(ConnectedSocketParcel const&);
 
 	private:
-		bool const communicatePortocolMessages();
-		bool const getPieceFromSeeder(long const interestedPiece);
+		bool const getPieceFromSeeder(MessagingSocket const&, long const);
+		bool const communicatePortocolMessages(MessagingSocket const&);
 
 		std::unique_ptr<IClientSocketObservable> socket;
-		BT::Torrent const& torrent;
-		BT::Peer seeder;
-		BT::Peer leecher;
+		Torrent torrent;
+		Peer seeder;
 	};
 }
 

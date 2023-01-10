@@ -10,6 +10,7 @@
 namespace BT 
 {
 	struct ConnectedSocketParcel;
+	struct MessagingSocket;
 
 	class Seeder : public IServerSocketObserver
 	{
@@ -25,7 +26,8 @@ namespace BT
 		virtual void OnAcceptConnection(ConnectedSocketParcel const&);
 
 	private:
-		bool const communicatePortocolMessages();
+		bool communicatePortocolMessages(MessagingSocket const&); 
+		void startTransfer(MessagingSocket const&);
 
 	private:
 		std::unique_ptr<IServerSocketObservable> socket;

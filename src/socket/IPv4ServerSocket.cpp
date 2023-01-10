@@ -23,8 +23,8 @@ namespace
 {
     std::string getIPv4AddrFromSockaddr(sockaddr_in& addr) 
     {
-        char ip[BT::Defaults::IPSize] = "";
-        inet_ntop(addr.sin_family, (void*) &addr.sin_addr, ip, BT::Defaults::IPSize);
+        char ip[INET_ADDRSTRLEN] = "";
+        inet_ntop(addr.sin_family, (void*) &addr.sin_addr, ip, INET_ADDRSTRLEN);
         return ip;
     }
 

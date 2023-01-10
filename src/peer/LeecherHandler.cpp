@@ -38,7 +38,7 @@ bool const BT::Seeder::LeecherHandler::communicatePortocolMessages(void) {
 	bool const handshakeFailed = false;
 
 	leecher.Send(BT::Defaults::HandshakeMessage.c_str(), BT::Defaults::HandshakeMessage.length());
-	leecher.Send(torrent.infoHash.c_str(), BT::Defaults::Sha1MdSize - 1);
+	leecher.Send(torrent.infoHash.c_str(), BT::Defaults::Sha1MdSize-1);
 	leecher.Send(seeder.GetId().c_str(), BT::Defaults::Sha1MdSize - 1);
 
 	char buffer[BT::Defaults::MaxBufferSize] = "";

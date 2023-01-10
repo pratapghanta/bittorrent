@@ -46,6 +46,7 @@ SRC_FILES        = common/Helpers.cpp                 \
    				   peer/Leecher.cpp                   \
 				   peer/MessageParcel.cpp             \
 				   peer/MessageParcelFactory.cpp      \
+				   peer/MessagingSocket.cpp           \
 				   peer/Peer.cpp                      \
 				   peer/PieceParcel.cpp               \
 				   peer/RequestParcel.cpp             \
@@ -60,6 +61,7 @@ SRC_FILES        = common/Helpers.cpp                 \
 				   torrent/MinimalTorrentParser.cpp   \
 				   torrent/Torrent.cpp                \
                    StartParams.cpp
+
 
 SRC_OBJS          = $(patsubst %.cpp, %.o, $(SRC_FILES))
 SRC_BUILD_DIR     = $(addprefix $(SRC_OBJDIR)/,$(SRC_MODULES))

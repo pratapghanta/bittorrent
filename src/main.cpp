@@ -42,8 +42,9 @@ namespace {
 		for (auto& seeder : params.peers) 
         {
             BT::Leecher l(torrent, seeder);
-            l.startTransfer();
+			break;
         }
+		// ensure that all data is transferred as expected
 	}
 }
 

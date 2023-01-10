@@ -17,9 +17,13 @@ namespace BT
 		rStatus = STATUSCODE::SC_SUCCESS;
 
 		Metainfo_t mi;
-		MinimalTorrentParser_t().Parse(torrent, mi);
-		MI_DictPtr_t const infoDict = mi.mData["info"].GetDictPtr();
+		rStatus = MinimalTorrentParser_t().Parse(torrent, mi);
+		if (SC_FAILED(rStatus))
+		{
+			return;
+		}
 
+		MI_DictPtr_t const infoDict = mi.mData["info"].GetDictPtr();
 		filename = torrent;
 		name = (*infoDict)["name"].GetString();
 		fileLength = (*infoDict)["length"].GetInt();

@@ -21,7 +21,8 @@ namespace BT {
 					                    RequestParcel>;
 
 	/* The seeder or leecher communicate using the following types of messages.  */
-	enum class MessageType : short {
+	enum class MessageType : short 
+	{
 		CHOKE = 0,
 		UNCHOKE,
 		INTERESTED,

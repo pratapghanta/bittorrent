@@ -18,6 +18,7 @@
 #include "peer/Leecher.hpp"
 #include "peer/MessageParcel.hpp"
 #include "peer/MessageParcelFactory.hpp"
+#include "peer/MessagingSocket.hpp"
 #include "socket/IPv4Socket.hpp"
 
 namespace 
@@ -27,7 +28,6 @@ namespace
 		std::stringstream ss;
 		unsigned int const endPos = saveFile.rfind(BT::Defaults::TorrentFileExtension);
 		ss << saveFile.substr(0, endPos) << "_" << pieceIndex;
-
 		return ss.str();
 	}
 
@@ -39,13 +39,15 @@ namespace
 
 	bool isTransferSuccessful(BT::Torrent const& torrent, long const pieceIndex, std::string const& fileContents)
 	{
-		unsigned char hash[BT::Defaults::Sha1MdSize] = "";
-
+		unsigned char hash[BT::Defaults::Sha1MdSize+1] = "";
 		SHA1(reinterpret_cast<unsigned char const*>(fileContents.c_str()), fileContents.length(), hash);
-		for (unsigned int i = 0; i < BT::Defaults::Sha1MdSize - 1; i++)
+		for (unsigned int i = 0; i < BT::Defaults::Sha1MdSize; i++)
+		{
 			if (hash[i] == '\0')
+			{
 				hash[i] = '_';
-
+			}
+		}
 		return torrent.pieceHashes[pieceIndex].compare(reinterpret_cast<char*>(hash));
 	}
 }
@@ -58,65 +60,81 @@ namespace BT
 	{
 		socket = IPv4ClientSocket::CreateTCPSocket();
 		socket->Register(this);
-
 		socket->ConnectToServer(seeder.ip, seeder.port);
 	}
 
 	void Leecher::OnConnect(ConnectedSocketParcel const& parcel)
 	{
-		// Leecher has connected socket. So, it can use it to transfer data
+		MessagingSocket messagingSocket (parcel);
+
+		if (!communicatePortocolMessages(messagingSocket))
+		{
+			return;
+		}
+
+		long interestedPiece = 1;
+		bool const isTransferred = getPieceFromSeeder(messagingSocket, interestedPiece);
+		if (isTransferred)
+		{
+			/* Broadcast to all other peers */
+			/* Print to log about the downloaded piece */
+			/* Synchronize threads such that this piece is not downloaded again */
+			messagingSocket.SendMessage(MessageParcelFactory::GetNotInterestedMessage());
+		}
 	}
 
-	bool const Leecher::communicatePortocolMessages() 
+	bool const Leecher::communicatePortocolMessages(MessagingSocket const& messagingSocket) 
 	{
-#if 0		
-		seeder.Send(Defaults::HandshakeMessage.c_str(), Defaults::HandshakeMessage.length());
-		seeder.Send(torrent.infoHash.c_str(), Defaults::Sha1MdSize - 1);
-		seeder.Send(leecher.GetId().c_str(), Defaults::Sha1MdSize - 1);
+		using namespace BT::Defaults;
 
-		char buffer[Defaults::MaxBufferSize] = "";
-		seeder.Receive(buffer, Defaults::HandshakeMessage.length());
-		if (Defaults::HandshakeMessage.compare(buffer) != 0)
+		messagingSocket.Send(HandshakeMessage.c_str(), HandshakeMessage.length());
+		messagingSocket.Send(torrent.infoHash.c_str(), Sha1MdSize);
+		messagingSocket.Send(messagingSocket.GetFromId().c_str(), Sha1MdSize);
+
+		char buffer[MaxBufferSize] = "";
+		messagingSocket.Receive(buffer, HandshakeMessage.length());
+		if (HandshakeMessage.compare(buffer) != 0)
+		{
 			return false;
+		}
 
 		auto inSameSwarm = [&]() 
 		{
-			memset(buffer, 0, Defaults::MaxBufferSize);
-			seeder.Receive(buffer, Defaults::Sha1MdSize - 1);
+			memset(buffer, 0, MaxBufferSize);
+			messagingSocket.Receive(buffer, Sha1MdSize);
 			return torrent.infoHash.compare(buffer) == 0;
 		};
 
 		auto expectedSeeder = [&]() 
 		{
-			memset(buffer, 0, Defaults::MaxBufferSize);
-			seeder.Receive(buffer, Defaults::Sha1MdSize - 1);
-			return seeder.GetId().compare(buffer) == 0;
+			memset(buffer, 0, MaxBufferSize);
+			messagingSocket.Receive(buffer, Defaults::Sha1MdSize);
+			return messagingSocket.GetToId().compare(buffer) == 0;
 		};
 
 		return inSameSwarm() && expectedSeeder();
-#endif
-		return true;
 	}
 
-	bool const Leecher::getPieceFromSeeder(long const interestedPiece) 
+	bool const Leecher::getPieceFromSeeder(MessagingSocket const& messagingSocket, long const interestedPiece) 
 	{
-#if 0
-		auto msg = seeder.ReceiveMessage(MessageType::BITFIELD);
+		auto msg = messagingSocket.ReceiveMessage(MessageType::BITFIELD);
 
 		if (!isPieceAvailableAtSeeder(msg, interestedPiece)) 
 		{
-			seeder.SendMessage(MessageParcelFactory::GetNotInterestedMessage());
+			messagingSocket.SendMessage(MessageParcelFactory::GetNotInterestedMessage());
 			return false;
 		}
 
-		seeder.SendMessage(MessageParcelFactory::GetInterestedMessage());
-		msg = seeder.ReceiveMessage(MessageType::CHOKE); /* Expecting choke/unchoke */
-		if (msg.IsChoked()) 
+		messagingSocket.SendMessage(MessageParcelFactory::GetInterestedMessage());
+		msg = messagingSocket.ReceiveMessage(MessageType::CHOKE); /* Expecting choke/unchoke */
+		if (msg.IsChoked())
+		{
 			return false;
+		}
 
 		int const begin = 0;
 		auto requestDetails = RequestParcel(interestedPiece, begin, torrent.pieceLength);
-		seeder.SendMessage(MessageParcelFactory::GetRequestMessage(requestDetails));
+		messagingSocket.SendMessage(MessageParcelFactory::GetRequestMessage(requestDetails));
 
 		auto isEndOfPiece = [&](long const currPos) 
 		{
@@ -133,14 +151,16 @@ namespace BT
 		{
 			if (fileContents.length() % Defaults::BlockSize == 0)
 			{
-				auto pieceMsg = seeder.ReceiveMessage(MessageType::PIECE);
+				auto pieceMsg = messagingSocket.ReceiveMessage(MessageType::PIECE);
 				if (!(pieceMsg.GetPiece() == PieceParcel(interestedPiece, fileContents.length(), nullptr)))
+				{
 					return false;
-				seeder.SendMessage(MessageParcelFactory::GetKeepAliveMessage());
+				}
+				messagingSocket.SendMessage(MessageParcelFactory::GetKeepAliveMessage());
 			}
 
 			char dataBuf[2] = "\0";
-			seeder.Receive(dataBuf, 1);
+			messagingSocket.Receive(dataBuf, 1);
 			fileContents += std::string(dataBuf);
 		}
 
@@ -148,26 +168,5 @@ namespace BT
 		fileHndl.Put(fileContents);
 
 		return isTransferSuccessful(torrent, interestedPiece, fileContents);
-#endif
-		return true;
-	}
-
-	void Leecher::startTransfer()
-	{
-#if 0
-		if (!communicatePortocolMessages())
-			return;
-
-		long interestedPiece = 1;
-
-		bool const isTransferred = getPieceFromSeeder(interestedPiece);
-		if (isTransferred)
-		{
-			/* Broadcast to all other peers */
-			/* Print to log about the downloaded piece */
-			/* Synchronize threads such that this piece is not downloaded again */
-			seeder.SendMessage(MessageParcelFactory::GetNotInterestedMessage());
-		}
-#endif
 	}
 }

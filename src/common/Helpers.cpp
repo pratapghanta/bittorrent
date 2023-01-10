@@ -17,9 +17,9 @@ std::string const CalculateId(std::string const& ip, unsigned int const& port) {
 
 	std::string const ipAndPort = oss.str();
 	
-	char hash[BT::Defaults::Sha1MdSize] = "";
+	char hash[BT::Defaults::Sha1MdSize+1] = "";
 	SHA1(reinterpret_cast<unsigned char const *>(ipAndPort.c_str()), ipAndPort.length(), reinterpret_cast<unsigned char *>(hash));
-	hash[BT::Defaults::Sha1MdSize-1] = '\0';
+	hash[BT::Defaults::Sha1MdSize] = '\0';
 
     return std::string(hash);
 }

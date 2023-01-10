@@ -4,17 +4,19 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
+        
         {
-            "name": "App",
+            "name": "Seeder",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/Debug/bin/bittorrent",
-            "args": [],
+            "program": "${workspaceFolder}/debug/bin/bittorrent",
+            "args": ["-v", "-b", "4444", "${workspaceFolder}/sample/moby_dick.txt.torrent"],
             "stopAtEntry": false,
-            "cwd": "${fileDirname}",
+            "cwd": "${workspaceFolder}",
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",
+            "MIDebuggerPath": "/usr/bin/gdb",
             "setupCommands": [
                 {
                     "description": "Enable pretty-printing for gdb",
@@ -28,7 +30,31 @@
                 }
             ]
         },
-
+        {
+            "name": "Leecher",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/debug/bin/bittorrent",
+            "args": ["-v", "-p", "127.0.0.1:44444", "-s", "${workspaceFolder}/sample/moby_dick.downloaded", "${workspaceFolder}/sample/moby_dick.txt.torrent"],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "MIDebuggerPath": "/usr/bin/gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description":  "Set Disassembly Flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ]
+        },
         {
             "name": "Tests",
             "type": "cppdbg",

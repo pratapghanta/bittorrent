@@ -54,6 +54,7 @@ namespace BT
           toPort(parcel.toPort),
           connectedSockfd(dup(parcel.connectedSockfd))
     {
+        makeSocketNonBlockable(connectedSockfd);
     }
 
     ConnectedSocket::ConnectedSocket(ConnectedSocket&& other)
@@ -77,7 +78,6 @@ namespace BT
         fromPort = other.fromPort;
         toIp = other.toIp;
         toPort = other.toPort;
-
         connectedSockfd = other.connectedSockfd;
         other.connectedSockfd = BT::Defaults::BadFD;
         
@@ -89,16 +89,15 @@ namespace BT
         Close();
     }
 
-    int ConnectedSocket::Send(char* buffer, unsigned int count) const
+    int ConnectedSocket::Send(char const * const buffer, unsigned int count) const
     {
         return write(connectedSockfd, buffer, count);
     }
 
-    int ConnectedSocket::Recieve(char* buffer, unsigned int count) const
+    int ConnectedSocket::Receive(char* buffer, unsigned int count) const
     {
         memset(buffer, 0, count);
-		makeSocketNonBlockable(connectedSockfd);
-
+		
 		time_t beg = time(0);
         unsigned int totalBytesRead = 0;
 		while (totalBytesRead < count) 

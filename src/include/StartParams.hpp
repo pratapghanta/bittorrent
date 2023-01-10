@@ -33,7 +33,7 @@ namespace BT
 		void initFlagOptionHandlers();
 		void initKeyValueOptionsHandlers();
 		void initOptionHandlers();
-		void parseOptions(std::vector<std::string> const&, bool const);
+		void parseOptions(std::vector<std::string> const&);
 		bool isFlagOption(std::string const&) const;
 		bool isKeyValueOption(std::string const&) const;
 

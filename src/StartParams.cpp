@@ -139,10 +139,7 @@ namespace
         os << "    Range of ports to use for reaching peers: " << BT::Defaults::InitPort << "-" << BT::Defaults::MaxPort << std::endl;
         os << "    Default port: " << BT::Defaults::DefaultPort << std::endl;
         os << "    Maximum supported size of internal buffers:" << std::endl;
-        os << "        File name length: " << BT::Defaults::MaxFilenameSize << std::endl;
         os << "        Block length: " << BT::Defaults::BlockSize << std::endl;
-        os << "        IP address size: " << BT::Defaults::IPSize << std::endl;
-        os << "        IP port size: " << BT::Defaults::PortSize << std::endl;
         os << "        SHA1 Hash size: " << BT::Defaults::Sha1MdSize << std::endl;
     }    
 }
@@ -218,26 +215,28 @@ namespace BT
         initKeyValueOptionsHandlers();
     }
 
-    void StartParams::parseOptions(std::vector<std::string> const& options,
-                                bool const skipKeyValueOptions)
+    void StartParams::parseOptions(std::vector<std::string> const& options)
     {
         for (unsigned int i = 0; i < options.size(); i++)
         {
             if (options[i][0] != '-' && torrentFilename.empty())
+            {
                 torrentFilename = options[i];
+            }
             else if (isFlagOption(options[i])) 
             {
                 auto handler = flagOptionHandler.find(options[i]);
                 if (handler != flagOptionHandler.end())
+                {
                     handler->second();
+                }
             }
             else if (isKeyValueOption(options[i]) && 
                      i + 1 < options.size() && options[i+1][0] != '-') 
             {
                 i++;
                 auto handler = keyValueOptionHandler.find(options[i-1]);
-                if (handler != keyValueOptionHandler.end() &&
-                    !skipKeyValueOptions) 
+                if (handler != keyValueOptionHandler.end()) 
                 {
                     handler->second(options[i]);
                 }
@@ -286,13 +285,11 @@ namespace BT
 
         initOptionHandlers();
         
-        parseOptions(options, true);
+        parseOptions(options);
         if (helpRequested) 
         {
             return;
         }
-
-        parseOptions(options, false);
     }
 }
 
