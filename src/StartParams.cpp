@@ -248,10 +248,14 @@ namespace BT
         }
 
         if (torrentFilename.empty())
+        {
             throwException(TorrentFileMissing());
+        }
 
         if (saveFilename.empty()) 
-            saveFilename = torrentFilename;
+        {
+            saveFilename = torrentFilename + ".save";
+        }
     }
 
     bool StartParams::isFlagOption(std::string const& option) const 

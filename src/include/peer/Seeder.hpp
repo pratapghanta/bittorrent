@@ -15,22 +15,22 @@ namespace BT
 	class Seeder : public IServerSocketObserver
 	{
 	public:
-		Seeder(Torrent const& t, unsigned int const p);
+		Seeder(Torrent const&, unsigned int const, unsigned int const);
 		Seeder(Seeder const&) = delete;
 		Seeder& operator=(Seeder const&) = delete;
 		Seeder(Seeder&&) = default; // TODO
 		Seeder& operator=(Seeder&&) = default; // TODO
-		~Seeder();
+		virtual ~Seeder();
 
 		// Callbacks from IServerSocketObserver
 		virtual void OnAcceptConnection(ConnectedSocketParcel const&);
 
 	private:
-		bool communicatePortocolMessages(MessagingSocket const&); 
-		void startTransfer(MessagingSocket const&);
+		bool handshake(MessagingSocket const&); 
+		void transfer(MessagingSocket const&);
 
 	private:
-		std::unique_ptr<IServerSocketObservable> socket;
+		std::unique_ptr<IServerSocketObservable> serverSocket;
 		Torrent torrent;
 	};
 }

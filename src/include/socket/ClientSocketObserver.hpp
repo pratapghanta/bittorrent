@@ -6,18 +6,11 @@
 namespace BT 
 {
     struct ConnectedSocketParcel;
-    class IClientSocketObservable;
+
     class IClientSocketObserver 
     {
     public:
-        IClientSocketObserver() = default;
-        IClientSocketObserver(IClientSocketObservable* observable);
-        virtual ~IClientSocketObserver();
-
         virtual void OnConnect(ConnectedSocketParcel const&) = 0;
-
-    private:
-        IClientSocketObservable* observable;
     };
 }
 

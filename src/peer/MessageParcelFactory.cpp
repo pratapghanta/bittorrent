@@ -28,12 +28,16 @@ namespace BT
 
 	MessageParcel const MessageParcelFactory::GetHaveMessage(long const have)
 	{
-        return MessageParcel(MessageType::HAVE, sizeof(have), MessagePayload{have});
+        return MessageParcel(MessageType::HAVE, 
+		                     1ul + sizeof(have), 
+							 MessagePayload{have});
 	}
 
 	MessageParcel const MessageParcelFactory::GetBitfieldMessage(std::string const& bitfield)
 	{
-        return MessageParcel(MessageType::BITFIELD, bitfield.length(), MessagePayload{bitfield});
+        return MessageParcel(MessageType::BITFIELD, 
+		                     1ul + bitfield.length(), 
+							 MessagePayload{bitfield});
 	}
 
 	MessageParcel const MessageParcelFactory::GetRequestMessage(RequestParcel const& request)

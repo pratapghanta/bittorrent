@@ -34,7 +34,7 @@ namespace {
 
 	void startAsSeeder(BT::StartParams const& params, BT::Torrent const& torrent)
 	{
-		BT::Seeder s(torrent, params.seederPort);
+		BT::Seeder s(torrent, params.seederPort, BT::Defaults::MaxConnections);
 	}
 
 	void startAsLeecher(BT::StartParams const& params, BT::Torrent const& torrent)

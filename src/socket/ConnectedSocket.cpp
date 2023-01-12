@@ -89,12 +89,12 @@ namespace BT
         Close();
     }
 
-    int ConnectedSocket::Send(char const * const buffer, unsigned int count) const
+    int ConnectedSocket::Send(void const * const buffer, unsigned int count) const
     {
         return write(connectedSockfd, buffer, count);
     }
 
-    int ConnectedSocket::Receive(char* buffer, unsigned int count) const
+    int ConnectedSocket::Receive(void* buffer, unsigned int count) const
     {
         memset(buffer, 0, count);
 		

@@ -19,10 +19,10 @@ namespace BT
         ConnectedSocket& operator=(ConnectedSocket const&) = delete;
         ConnectedSocket(ConnectedSocket&&);
         ConnectedSocket& operator=(ConnectedSocket&&);
-        ~ConnectedSocket();
+        virtual ~ConnectedSocket();
 
-        virtual int Send(char const * const, unsigned int) const;
-        virtual int Receive(char*, unsigned int) const;
+        virtual int Send(void const * const, unsigned int) const;
+        virtual int Receive(void*, unsigned int) const;
 
         virtual void Close();
 

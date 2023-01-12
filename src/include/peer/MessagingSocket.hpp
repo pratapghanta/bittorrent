@@ -27,12 +27,12 @@ namespace BT
         int Receive(char*, unsigned int) const;
 
         void SendMessage(MessageParcel const&) const;
-        MessageParcel const ReceiveMessage(MessageType const) const;
+        MessageParcel const ReceiveMessage() const;
 
 	private:
         std::string fromId;
         std::string toId;
-        ConnectedSocket socket;
+        ConnectedSocket connectedSocket;
 	};
 }
 

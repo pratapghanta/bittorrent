@@ -15,13 +15,13 @@ namespace BT
         IPv4ServerSocket();
 
     public:
-        static std::unique_ptr<IPv4ServerSocket> CreateTCPSocket(unsigned int const port);
+        static std::unique_ptr<IPv4ServerSocket> CreateTCPSocket(unsigned int const, unsigned int const);
 
         IPv4ServerSocket(IPv4ServerSocket const&) = delete;
         IPv4ServerSocket& operator=(IPv4ServerSocket const&) = delete;
         IPv4ServerSocket(IPv4ServerSocket&&);
         IPv4ServerSocket& operator=(IPv4ServerSocket&&);
-        ~IPv4ServerSocket();
+        virtual ~IPv4ServerSocket();
 
         virtual void Close();
         virtual void AcceptConnection();
@@ -30,6 +30,7 @@ namespace BT
         int listenSockfd;
         std::string ip;
         unsigned int listenPort;
+        unsigned int maxConnections;
     };
 
     class IPv4ClientSocket : public IClientSocketObservable

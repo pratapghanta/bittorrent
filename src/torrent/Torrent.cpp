@@ -44,6 +44,8 @@ namespace BT
 			std::string const& ithPieceHash = hashesOfAllPieces.substr(i*BT::Defaults::Sha1MdSize, BT::Defaults::Sha1MdSize);
 			pieceHashes.push_back(ithPieceHash);
 		}
+
+		infoHash = mi.mInfoHash;
 	}
 
 	void Torrent::Reset() 

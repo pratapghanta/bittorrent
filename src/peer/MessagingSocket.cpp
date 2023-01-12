@@ -24,49 +24,31 @@ namespace BT
 {
 	namespace 
 	{
-		std::string receiveString(ConnectedSocket const& socket, unsigned int const nBytesToRead) 
+		long const receiveLong(ConnectedSocket const& connectedSocket) 
 		{
-			char buffer[Defaults::MaxBufferSize] = "";
-			socket.Receive(buffer, nBytesToRead);
-			buffer[nBytesToRead] = '\0';
-
-			return std::string(buffer);
+			long value = 0;
+			connectedSocket.Receive((void*)&value, sizeof(value));
+			return value;
 		}
 
-		long const receiveLong(ConnectedSocket const& socket) 
+		unsigned long const receiveMessageLength(ConnectedSocket const& connectedSocket) 
 		{
-			unsigned int const nBytesToRead = sizeof(long);
-			auto buffer = receiveString(socket, nBytesToRead);
-			return std::stol(buffer);
+			unsigned long msgLength = 0;
+			connectedSocket.Receive((void*)&msgLength, sizeof(msgLength));
+			return msgLength;
 		}
 
-		unsigned long const receiveLengthOfMessage(ConnectedSocket const& socket) 
+		MessageType const receiveMessageType(ConnectedSocket const& connectedSocket) 
 		{
-			unsigned int const nBytesToRead = sizeof(unsigned long);
-			auto buffer = receiveString(socket, nBytesToRead);
-			return std::stoul(buffer);
-		}
-
-		MessageType const receiveTypeOfMessage(ConnectedSocket const& socket) 
-		{
-			unsigned int const nBytesToRead = 1;
-			auto buffer = receiveString(socket, nBytesToRead);
-			return MessageType(std::stoi(buffer));
+			MessageType msgType = MessageType::END;
+			connectedSocket.Receive((void*)&msgType, sizeof(msgType));
+			return msgType;
 		}
 
 		template<MessageType msgType>
-		MessageParcel const receiveSpecificMessage(ConnectedSocket const& socket) 
+		MessageParcel const receiveSpecificMessage(ConnectedSocket const&,
+		                                           unsigned long const) 
 		{
-			if (receiveLengthOfMessage(socket) == 0)
-			{
-				return MessageParcelFactory::GetKeepAliveMessage();
-			} 
-
-			if (receiveTypeOfMessage(socket) != msgType)
-			{
-				throw UnExpectedMessage();
-			}
-
 			std::unordered_map<MessageType, std::function<MessageParcel const()>> handlers;
 			handlers[MessageType::CHOKE] = MessageParcelFactory::GetChokedMessage;
 			handlers[MessageType::UNCHOKE] = MessageParcelFactory::GetUnChokedMessage;
@@ -74,7 +56,7 @@ namespace BT
 			handlers[MessageType::NOTINTERESTED] = MessageParcelFactory::GetNotInterestedMessage;
 
 			auto itr = handlers.find(msgType);
-			if (itr != handlers.end())
+			if (itr == handlers.end())
 			{ 
 				throw UnExpectedMessage();
 			}
@@ -83,201 +65,153 @@ namespace BT
 		}
 
 		template<>
-		MessageParcel const receiveSpecificMessage<MessageType::HAVE>(ConnectedSocket const& socket) 
+		MessageParcel const receiveSpecificMessage<MessageType::HAVE>(ConnectedSocket const& connectedSocket,
+		                                                              unsigned long const) 
 		{
-			if (receiveLengthOfMessage(socket) == 0)
-			{
-				return MessageParcelFactory::GetKeepAliveMessage();
-			} 
-
-			if(receiveTypeOfMessage(socket) != MessageType::HAVE)
-			{ 
-				throw UnExpectedMessage();
-			}
-
-			unsigned int const nBytesToRead = sizeof(long);
-			auto buffer = receiveString(socket, nBytesToRead);
-			return MessageParcelFactory::GetHaveMessage(std::stol(buffer));
+			long have = receiveLong(connectedSocket);
+			return MessageParcelFactory::GetHaveMessage(have);
 		}
 
 		template<>
-		MessageParcel const receiveSpecificMessage<MessageType::BITFIELD>(ConnectedSocket const& socket) 
+		MessageParcel const receiveSpecificMessage<MessageType::BITFIELD>(ConnectedSocket const& connectedSocket,
+		                                                                  unsigned long const msgLength) 
 		{
-			auto msgLength = receiveLengthOfMessage(socket);
-			if (msgLength == 0)
-			{ 
-				return MessageParcelFactory::GetKeepAliveMessage();
-			}
-
-			if (receiveTypeOfMessage(socket) != MessageType::HAVE) 
-			{
-				throw UnExpectedMessage();
-			}
-
-			auto buffer = receiveString(socket, msgLength);
+			char buffer[Defaults::MaxBufferSize] = "";
+			connectedSocket.Receive((void*)&buffer, msgLength-1);
+			buffer[msgLength-1] = '\0';
 			return  MessageParcelFactory::GetBitfieldMessage(buffer);
 		}
 
 		template<>
-		MessageParcel const receiveSpecificMessage<MessageType::REQUEST>(ConnectedSocket const& socket) 
+		MessageParcel const receiveSpecificMessage<MessageType::REQUEST>(ConnectedSocket const& connectedSocket,
+		                                                                 unsigned long const) 
 		{
-			if (receiveLengthOfMessage(socket) == 0)
-			{ 
-				return MessageParcelFactory::GetKeepAliveMessage();
-			}
-
-			if (receiveTypeOfMessage(socket) != MessageType::HAVE) 
-			{
-				throw UnExpectedMessage();
-			}
-
-			RequestParcel request(receiveLong(socket), receiveLong(socket), receiveLong(socket));
+			RequestParcel request(receiveLong(connectedSocket), 
+			                      receiveLong(connectedSocket), 
+								  receiveLong(connectedSocket));
 			return  MessageParcelFactory::GetRequestMessage(request);
 		}
 
 		template<>
-		MessageParcel const receiveSpecificMessage<MessageType::PIECE>(ConnectedSocket const& socket) 
+		MessageParcel const receiveSpecificMessage<MessageType::PIECE>(ConnectedSocket const& connectedSocket,
+		                                                               unsigned long const) 
 		{
-			if (receiveLengthOfMessage(socket) == 0)
-			{ 
-				return MessageParcelFactory::GetKeepAliveMessage();
-			}
-
-			if (receiveTypeOfMessage(socket) != MessageType::HAVE) 
-			{
-				throw UnExpectedMessage();
-			}
-
-			PieceParcel piece(receiveLong(socket), receiveLong(socket), nullptr);
+			PieceParcel piece(receiveLong(connectedSocket), 
+			                  receiveLong(connectedSocket), nullptr);
 			return  MessageParcelFactory::GetPieceMessage(piece);
 		}
 
 		template<>
-		MessageParcel const receiveSpecificMessage<MessageType::CANCEL>(ConnectedSocket const& socket) 
+		MessageParcel const receiveSpecificMessage<MessageType::CANCEL>(ConnectedSocket const& connectedSocket,
+		                                                                unsigned long const) 
 		{
-			if (receiveLengthOfMessage(socket) == 0) 
-			{
-				return MessageParcelFactory::GetKeepAliveMessage();
-			}
-
-			if (receiveTypeOfMessage(socket) != MessageType::HAVE)
-			{ 
-				throw UnExpectedMessage();
-			}
-
-			RequestParcel cancel(receiveLong(socket), receiveLong(socket), receiveLong(socket));
+			RequestParcel cancel(receiveLong(connectedSocket),
+			                     receiveLong(connectedSocket),
+								 receiveLong(connectedSocket));
 			return  MessageParcelFactory::GetCancelMessage(cancel);
 		}
 
-		void sendMessageLength(ConnectedSocket const& socket, MessageParcel const &msg) 
+		void sendLong(ConnectedSocket const& connectedSocket, long const value) 
 		{
-			char buffer[Defaults::MaxBufferSize] = "";
-
-			auto msgLength = msg.GetLength();
-			memcpy(buffer, &msgLength, sizeof(msgLength));
-			socket.Send(buffer, sizeof(msgLength));
+			connectedSocket.Send((void*)&value, sizeof(value));
 		}
 
-		void sendMessageType(ConnectedSocket const& socket, MessageParcel const &msg) 
+		void sendMessageLength(ConnectedSocket const& connectedSocket, MessageParcel const &msg) 
 		{
-			// char buffer[Defaults::MaxBufferSize] = "";
-			// ??
+			unsigned long msgLength = msg.GetLength();
+			connectedSocket.Send((void*)&msgLength, sizeof(msgLength));
 		}
 
-		void sendLong(ConnectedSocket const& socket, long const value) 
+		void sendMessageType(ConnectedSocket const& connectedSocket, MessageParcel const &msg) 
 		{
-			char buffer[Defaults::MaxBufferSize] = "";
-			memcpy(buffer, &value, sizeof(value));
-			socket.Send(buffer, sizeof(value));
+			MessageType type = msg.GetType();
+			connectedSocket.Send((void*)&type, sizeof(type));
 		}
 
-		void sendMessageAttributes(ConnectedSocket const& socket, MessageParcel const &msg) 
+		void sendMessageAttributes(ConnectedSocket const& connectedSocket, MessageParcel const &msg) 
 		{
-			sendMessageLength(socket, msg);
-			sendMessageType(socket, msg);
+			sendMessageLength(connectedSocket, msg);
+			sendMessageType(connectedSocket, msg);
 		}
 
 		template<MessageType msgType>
-		void sendSpecificMessage(ConnectedSocket const& socket, MessageParcel const &msg) {}
+		void sendSpecificMessage(ConnectedSocket const& connectedSocket, MessageParcel const &msg) {}
 
 		template<>
-		void sendSpecificMessage<MessageType::CHOKE>(ConnectedSocket const& socket, MessageParcel const &msg) 
+		void sendSpecificMessage<MessageType::CHOKE>(ConnectedSocket const& connectedSocket, MessageParcel const &msg) 
 		{
-			sendMessageAttributes(socket, msg);
+			sendMessageAttributes(connectedSocket, msg);
 		}
 
 		template<>
-		void sendSpecificMessage<MessageType::UNCHOKE>(ConnectedSocket const& socket, MessageParcel const &msg) 
+		void sendSpecificMessage<MessageType::UNCHOKE>(ConnectedSocket const& connectedSocket, MessageParcel const &msg) 
 		{
-			sendMessageAttributes(socket, msg);
+			sendMessageAttributes(connectedSocket, msg);
 		}
 
 		template<>
-		void sendSpecificMessage<MessageType::INTERESTED>(ConnectedSocket const& socket, MessageParcel const &msg) 
+		void sendSpecificMessage<MessageType::INTERESTED>(ConnectedSocket const& connectedSocket, MessageParcel const &msg) 
 		{
-			sendMessageLength(socket, msg);
+			sendMessageLength(connectedSocket, msg);
 			if (msg.GetLength() == 0) 
 			{
 				return; /* Keepalive */
 			}
-			sendMessageType(socket, msg);
+			sendMessageType(connectedSocket, msg);
 		}
 
 		template<>
-		void sendSpecificMessage<MessageType::NOTINTERESTED>(ConnectedSocket const& socket, MessageParcel const &msg) 
+		void sendSpecificMessage<MessageType::NOTINTERESTED>(ConnectedSocket const& connectedSocket, MessageParcel const &msg) 
 		{
-			sendMessageAttributes(socket, msg);
+			sendMessageAttributes(connectedSocket, msg);
 		}
 
 		template<>
-		void sendSpecificMessage<MessageType::HAVE>(ConnectedSocket const& socket, MessageParcel const &msg) 
+		void sendSpecificMessage<MessageType::HAVE>(ConnectedSocket const& connectedSocket, MessageParcel const &msg) 
 		{
-			sendMessageAttributes(socket, msg);
-			sendLong(socket, msg.GetHave());
+			sendMessageAttributes(connectedSocket, msg);
+			sendLong(connectedSocket, msg.GetHave());
 		}
 
 		template<>
-		void sendSpecificMessage<MessageType::BITFIELD>(ConnectedSocket const& socket, MessageParcel const &msg) 
+		void sendSpecificMessage<MessageType::BITFIELD>(ConnectedSocket const& connectedSocket, MessageParcel const &msg) 
 		{
-			sendMessageAttributes(socket, msg);
+			sendMessageAttributes(connectedSocket, msg);
 
 			auto bitfield = msg.GetBitfield();
-			char buffer[Defaults::MaxBufferSize] = "";
-
-			strcpy(buffer, bitfield.c_str());
-			socket.Send(buffer, bitfield.length());
+			connectedSocket.Send((void*)bitfield.c_str(), bitfield.length());
 		}
 
 		template<>
-		void sendSpecificMessage<MessageType::REQUEST>(ConnectedSocket const& socket, MessageParcel const &msg) 
+		void sendSpecificMessage<MessageType::REQUEST>(ConnectedSocket const& connectedSocket, MessageParcel const &msg) 
 		{
-			sendMessageAttributes(socket, msg);
+			sendMessageAttributes(connectedSocket, msg);
 
 			auto request = msg.GetRequest();
-			sendLong(socket, request.index);
-			sendLong(socket, request.begin);
-			sendLong(socket, request.length);
+			sendLong(connectedSocket, request.index);
+			sendLong(connectedSocket, request.begin);
+			sendLong(connectedSocket, request.length);
 		}
 
 		template<>
-		void sendSpecificMessage<MessageType::PIECE>(ConnectedSocket const& socket, MessageParcel const &msg) 
+		void sendSpecificMessage<MessageType::PIECE>(ConnectedSocket const& connectedSocket, MessageParcel const &msg) 
 		{
-			sendMessageAttributes(socket, msg);
+			sendMessageAttributes(connectedSocket, msg);
 
 			auto piece = msg.GetPiece();
-			sendLong(socket, piece.index);
-			sendLong(socket, piece.begin);
+			sendLong(connectedSocket, piece.index);
+			sendLong(connectedSocket, piece.begin);
 		}
 
 		template<>
-		void sendSpecificMessage<MessageType::CANCEL>(ConnectedSocket const& socket, MessageParcel const &msg) 
+		void sendSpecificMessage<MessageType::CANCEL>(ConnectedSocket const& connectedSocket, MessageParcel const &msg) 
 		{
-			sendMessageAttributes(socket, msg);
+			sendMessageAttributes(connectedSocket, msg);
 
 			auto cancel = msg.GetRequest();
-			sendLong(socket, cancel.index);
-			sendLong(socket, cancel.begin);
-			sendLong(socket, cancel.length);
+			sendLong(connectedSocket, cancel.index);
+			sendLong(connectedSocket, cancel.begin);
+			sendLong(connectedSocket, cancel.length);
 		}
 	}
 }
@@ -285,7 +219,7 @@ namespace BT
 namespace BT 
 {
     MessagingSocket::MessagingSocket(ConnectedSocketParcel const& parcel)
-        : socket(parcel)
+        : connectedSocket(parcel)
     {
         fromId = CalculateId(parcel.fromIp, parcel.fromPort);
         toId = CalculateId(parcel.toIp, parcel.toPort);
@@ -293,12 +227,12 @@ namespace BT
 
     int MessagingSocket::Send(char const * const buffer, unsigned int count) const
     {
-        return socket.Send(buffer, count);
+        return connectedSocket.Send(buffer, count);
     }
 
     int MessagingSocket::Receive(char* buffer, unsigned int count) const
     {
-        return socket.Receive(buffer, count);
+        return connectedSocket.Receive(buffer, count);
     }
 
     void MessagingSocket::SendMessage(MessageParcel const& msg) const
@@ -322,12 +256,13 @@ namespace BT
 		{
 			throw UnExpectedMessage();
 		}
-		itr->second(socket, msg);
+		itr->second(connectedSocket, msg);
     }
 
-    MessageParcel const MessagingSocket::ReceiveMessage(MessageType const msgType) const
+    MessageParcel const MessagingSocket::ReceiveMessage() const
     {
-        static std::unordered_map<MessageType, std::function<MessageParcel const(ConnectedSocket const&)>> handlers;
+        static std::unordered_map<MessageType, 
+		                          std::function<MessageParcel const(ConnectedSocket const&, unsigned long const)>> handlers;
         if (handlers.empty())
         {
             handlers[MessageType::CHOKE] = receiveSpecificMessage<MessageType::CHOKE>;
@@ -341,11 +276,14 @@ namespace BT
             handlers[MessageType::CANCEL] = receiveSpecificMessage<MessageType::CANCEL>;
         }
 
+		unsigned long msgLength = receiveMessageLength(connectedSocket);
+		MessageType msgType = receiveMessageType(connectedSocket);
+		
 		auto itr = handlers.find(msgType);
 		if (itr == handlers.end())
 		{
 			throw UnExpectedMessage();
 		}
-		return itr->second(socket);		
+		return itr->second(connectedSocket, msgLength);		
     }
 }

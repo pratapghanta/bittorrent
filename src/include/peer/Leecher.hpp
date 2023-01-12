@@ -16,15 +16,17 @@ namespace BT
 	{
 	public:
 		Leecher(BT::Torrent const t, Peer const& seeder);
-		
+		virtual ~Leecher();
+
 		// Callbacks from IClientSocketObserver
 		virtual void OnConnect(ConnectedSocketParcel const&);
 
 	private:
+		bool const handshake(MessagingSocket const&);
+		void transfer(MessagingSocket const&);
 		bool const getPieceFromSeeder(MessagingSocket const&, long const);
-		bool const communicatePortocolMessages(MessagingSocket const&);
 
-		std::unique_ptr<IClientSocketObservable> socket;
+		std::unique_ptr<IClientSocketObservable> clientSocket;
 		Torrent torrent;
 		Peer seeder;
 	};

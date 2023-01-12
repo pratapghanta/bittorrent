@@ -64,11 +64,13 @@ namespace BT
 {
     IPv4ServerSocket::IPv4ServerSocket()
         : listenSockfd(BT::Defaults::BadFD),
-          listenPort(0) {}
+          listenPort(0),
+          maxConnections(0) {}
 
     IPv4ServerSocket::IPv4ServerSocket(IPv4ServerSocket&& other)
         : listenSockfd(other.listenSockfd),
-          listenPort(other.listenPort) 
+          listenPort(other.listenPort),
+          maxConnections(other.maxConnections) 
     {
         other.listenSockfd = BT::Defaults::BadFD;
     }
@@ -82,6 +84,8 @@ namespace BT
 
         listenSockfd = other.listenSockfd;
         listenPort = other.listenPort;
+        maxConnections = other.maxConnections;
+
         other.listenSockfd = BT::Defaults::BadFD;
         return *this;
     }
@@ -91,15 +95,17 @@ namespace BT
         Close();
     }
 
-    std::unique_ptr<IPv4ServerSocket> IPv4ServerSocket::CreateTCPSocket(unsigned int const port) 
+    std::unique_ptr<IPv4ServerSocket> IPv4ServerSocket::CreateTCPSocket(unsigned int const port, 
+                                                                        unsigned int maxConnections) 
     {
         std::unique_ptr<IPv4ServerSocket> s { new IPv4ServerSocket() };
         s->listenSockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
         s->ip = getIPv4AddrFromSocket(s->listenSockfd);
         s->listenPort = port;
+        s->maxConnections = maxConnections;
 
         bindIPv4Socket(s->listenSockfd, s->listenPort);
-        listen(s->listenSockfd, Defaults::MaxConnections);
+        listen(s->listenSockfd, maxConnections);
 
         return s;
     }
@@ -116,7 +122,7 @@ namespace BT
     void IPv4ServerSocket::AcceptConnection() 
     {
         unsigned int connections = 0;
-        while (connections < Defaults::MaxConnections)
+        while (connections < maxConnections)
         {
             sockaddr_in client_addr;
             socklen_t clilen = sizeof(client_addr);

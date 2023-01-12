@@ -40,40 +40,38 @@ namespace
 
 namespace BT 
 {
-	Seeder::Seeder(Torrent const& t, unsigned int const port) 
+	Seeder::Seeder(Torrent const& t, 
+	               unsigned int const port, 
+				   unsigned int const maxConnections) 
 		: torrent(t)
 	{
-		socket = IPv4ServerSocket::CreateTCPSocket(port);
-		socket->Register(this);
-		socket->AcceptConnection();
+		serverSocket = IPv4ServerSocket::CreateTCPSocket(port, maxConnections);
+		serverSocket->Register(this);
+		serverSocket->AcceptConnection();
 	}
 
 	Seeder::~Seeder() 
 	{
+		serverSocket->Unregister(this);
 	}
 
 	void Seeder::OnAcceptConnection(ConnectedSocketParcel const& parcel)
 	{
-		MessagingSocket socket (parcel);
-		std::thread th([&]() { 
-			startTransfer(socket); 
-		});
-		th.detach();
+		MessagingSocket messagingSocket (parcel);
+		transfer(messagingSocket); // TODO: Start a thread for n-n communication
 	}
 
-
-	bool Seeder::communicatePortocolMessages(MessagingSocket const& socket) 
+	bool Seeder::handshake(MessagingSocket const& messagingSocket) 
 	{
 		using namespace BT::Defaults;
 
-		socket.Send(HandshakeMessage.c_str(), HandshakeMessage.length());
-		socket.Send(torrent.infoHash.c_str(), Sha1MdSize);
-		socket.Send(socket.GetFromId().c_str(), Sha1MdSize);
+		messagingSocket.Send(HandshakeMessage.c_str(), HandshakeMessage.length());
+		messagingSocket.Send(torrent.infoHash.c_str(), Sha1MdSize);
+		messagingSocket.Send(messagingSocket.GetToId().c_str(), Sha1MdSize);
 
 		char buffer[MaxBufferSize] = "";
 		memset(buffer, 0, MaxBufferSize);
-		socket.Receive(buffer, HandshakeMessage.length());
-
+		messagingSocket.Receive(buffer, HandshakeMessage.length());
 		if (std::string(buffer).compare(HandshakeMessage) != 0)
 		{
 			return false;
@@ -81,22 +79,22 @@ namespace BT
 
 		auto inSameSwarm = [&]() {
 			memset(buffer, 0, MaxBufferSize);
-			socket.Receive(buffer, Sha1MdSize);
+			messagingSocket.Receive(buffer, Sha1MdSize);
 			return torrent.infoHash.compare(buffer) == 0;
 		};
 
 		auto isExpectedHost = [&]() {
 			memset(buffer, 0, MaxBufferSize);
-			socket.Receive(buffer, Sha1MdSize);
-			return socket.GetToId().compare(buffer) == 0;
+			messagingSocket.Receive(buffer, Sha1MdSize);
+			return messagingSocket.GetToId().compare(buffer) == 0;
 		};
 
 		return inSameSwarm() && isExpectedHost();
 	}
 
-	void Seeder::startTransfer(MessagingSocket const& socket) 
+	void Seeder::transfer(MessagingSocket const& messagingSocket) 
 	{
-		if (!communicatePortocolMessages(socket))
+		if (!handshake(messagingSocket))
 		{
 			return;
 		}
@@ -104,14 +102,14 @@ namespace BT
 		long totalBytesTransferred = 0;
 
 		std::string const avaliablePieces(torrent.numOfPieces, '1');
-		socket.SendMessage(MessageParcelFactory::GetBitfieldMessage(avaliablePieces));
+		messagingSocket.SendMessage(MessageParcelFactory::GetBitfieldMessage(avaliablePieces));
 
-		auto msg = socket.ReceiveMessage(MessageType::INTERESTED);
+		auto msg = messagingSocket.ReceiveMessage(); // MessageType::INTERESTED
 		while (msg.IsInterested()) 
 		{
-			socket.SendMessage(MessageParcelFactory::GetUnChokedMessage());
+			messagingSocket.SendMessage(MessageParcelFactory::GetUnChokedMessage());
 
-			auto requestMsg = socket.ReceiveMessage(MessageType::REQUEST);
+			auto requestMsg = messagingSocket.ReceiveMessage(); // MessageType::REQUEST
 			RequestParcel const request = requestMsg.GetRequest();
 
 			CBinaryFileHandler fileHndl(getDataFilename(torrent.filename));
@@ -127,21 +125,21 @@ namespace BT
 
 					PieceParcel piece(request.index, bytesTransfered + 1, nullptr);
 					MessageParcel const& pieceMsg = MessageParcelFactory::GetPieceMessage(piece);
-					socket.SendMessage(pieceMsg);
+					messagingSocket.SendMessage(pieceMsg);
 
-					auto keepAlive = socket.ReceiveMessage(MessageType::INTERESTED);
+					auto keepAlive = messagingSocket.ReceiveMessage(); // MessageType::INTERESTED
 				}
 
 				std::string const& data = fileHndl.Get();
 				if (data.empty())
 					break;
-				socket.Send(data.c_str(), data.length());
+				messagingSocket.Send(data.c_str(), data.length());
 				bytesTransfered += data.length();
 			}
 
 			totalBytesTransferred += bytesTransfered;
 
-			msg = socket.ReceiveMessage(MessageType::INTERESTED);
+			msg = messagingSocket.ReceiveMessage(); // MessageType::INTERESTED
 			if (msg.IsKeepAlive()) usleep(1000000);
 		}
 	}

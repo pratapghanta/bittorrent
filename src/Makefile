@@ -52,12 +52,10 @@ SRC_FILES        = common/Helpers.cpp                 \
 				   peer/RequestParcel.cpp             \
 				   peer/Seeder.cpp                    \
 				   socket/ClientSocketObservable.cpp  \
-				   socket/ClientSocketObserver.cpp    \
 				   socket/ConnectedSocket.cpp         \
 				   socket/IPv4ClientSocket.cpp        \
 				   socket/IPv4ServerSocket.cpp        \
 				   socket/ServerSocketObservable.cpp  \
-				   socket/ServerSocketObserver.cpp    \
 				   torrent/MinimalTorrentParser.cpp   \
 				   torrent/Torrent.cpp                \
                    StartParams.cpp

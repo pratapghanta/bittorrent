@@ -34,7 +34,7 @@ namespace
 	bool const isPieceAvailableAtSeeder(BT::MessageParcel const& msg, long const pieceIndex) 
 	{
 		auto piecesInfo = msg.GetBitfield();
-		return piecesInfo[pieceIndex] == 1;
+		return piecesInfo[pieceIndex] == '1';
 	}
 
 	bool isTransferSuccessful(BT::Torrent const& torrent, long const pieceIndex, std::string const& fileContents)
@@ -58,21 +58,25 @@ namespace BT
 		: torrent(t), 
 		  seeder(s) 
 	{
-		socket = IPv4ClientSocket::CreateTCPSocket();
-		socket->Register(this);
-		socket->ConnectToServer(seeder.ip, seeder.port);
+		clientSocket = IPv4ClientSocket::CreateTCPSocket();
+		clientSocket->Register(this);
+		clientSocket->ConnectToServer(seeder.ip, seeder.port);
+	}
+
+	Leecher::~Leecher()
+	{
+		clientSocket->Unregister(this);
 	}
 
 	void Leecher::OnConnect(ConnectedSocketParcel const& parcel)
 	{
 		MessagingSocket messagingSocket (parcel);
-
-		if (!communicatePortocolMessages(messagingSocket))
+		if (!handshake(messagingSocket))
 		{
 			return;
 		}
 
-		long interestedPiece = 1;
+		long interestedPiece = 0;
 		bool const isTransferred = getPieceFromSeeder(messagingSocket, interestedPiece);
 		if (isTransferred)
 		{
@@ -83,13 +87,9 @@ namespace BT
 		}
 	}
 
-	bool const Leecher::communicatePortocolMessages(MessagingSocket const& messagingSocket) 
+	bool const Leecher::handshake(MessagingSocket const& messagingSocket) 
 	{
 		using namespace BT::Defaults;
-
-		messagingSocket.Send(HandshakeMessage.c_str(), HandshakeMessage.length());
-		messagingSocket.Send(torrent.infoHash.c_str(), Sha1MdSize);
-		messagingSocket.Send(messagingSocket.GetFromId().c_str(), Sha1MdSize);
 
 		char buffer[MaxBufferSize] = "";
 		messagingSocket.Receive(buffer, HandshakeMessage.length());
@@ -109,15 +109,23 @@ namespace BT
 		{
 			memset(buffer, 0, MaxBufferSize);
 			messagingSocket.Receive(buffer, Defaults::Sha1MdSize);
-			return messagingSocket.GetToId().compare(buffer) == 0;
+			return messagingSocket.GetFromId().compare(buffer) == 0;
 		};
 
-		return inSameSwarm() && expectedSeeder();
+		if (inSameSwarm() && expectedSeeder())
+		{
+			messagingSocket.Send(HandshakeMessage.c_str(), HandshakeMessage.length());
+			messagingSocket.Send(torrent.infoHash.c_str(), Sha1MdSize);
+			messagingSocket.Send(messagingSocket.GetFromId().c_str(), Sha1MdSize);
+			return true;
+		}
+
+		return false;
 	}
 
 	bool const Leecher::getPieceFromSeeder(MessagingSocket const& messagingSocket, long const interestedPiece) 
 	{
-		auto msg = messagingSocket.ReceiveMessage(MessageType::BITFIELD);
+		auto msg = messagingSocket.ReceiveMessage(); // MessageType::BITFIELD
 
 		if (!isPieceAvailableAtSeeder(msg, interestedPiece)) 
 		{
@@ -126,7 +134,7 @@ namespace BT
 		}
 
 		messagingSocket.SendMessage(MessageParcelFactory::GetInterestedMessage());
-		msg = messagingSocket.ReceiveMessage(MessageType::CHOKE); /* Expecting choke/unchoke */
+		msg = messagingSocket.ReceiveMessage(); // MessageType::UNCHOKE /* Expecting choke/unchoke */
 		if (msg.IsChoked())
 		{
 			return false;
@@ -151,7 +159,7 @@ namespace BT
 		{
 			if (fileContents.length() % Defaults::BlockSize == 0)
 			{
-				auto pieceMsg = messagingSocket.ReceiveMessage(MessageType::PIECE);
+				auto pieceMsg = messagingSocket.ReceiveMessage(); // MessageType::PIECE
 				if (!(pieceMsg.GetPiece() == PieceParcel(interestedPiece, fileContents.length(), nullptr)))
 				{
 					return false;
