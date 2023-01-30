@@ -3,8 +3,8 @@
 
 #include <memory>
 
-#include "socket/ServerSocketObservable.hpp"
-#include "socket/ServerSocketObserver.hpp"
+#include "peer/ServerSocketObservable.hpp"
+#include "peer/ServerSocketObserver.hpp"
 #include "torrent/Torrent.hpp"
 
 namespace BT 
@@ -22,12 +22,12 @@ namespace BT
 		Seeder& operator=(Seeder&&) = default; // TODO
 		virtual ~Seeder();
 
-		// Callbacks from IServerSocketObserver
 		virtual void OnAcceptConnection(ConnectedSocketParcel const&);
 
 	private:
 		bool handshake(MessagingSocket const&); 
 		void transfer(MessagingSocket const&);
+		void messageLoop(MessagingSocket const&);
 
 	private:
 		std::unique_ptr<IServerSocketObservable> serverSocket;

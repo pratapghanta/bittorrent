@@ -3,13 +3,12 @@
 
 #include <vector>
 
-#include "socket/ServerSocket.hpp"
-
 namespace BT 
 {
     struct ConnectedSocketParcel;
     class IServerSocketObserver;
-    class IServerSocketObservable : public IServerSocket
+
+    class IServerSocketObservable
     {
     public:
         virtual void Register(IServerSocketObserver*);

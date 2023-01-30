@@ -17,7 +17,7 @@
 
 #include "common/Defaults.hpp"
 #include "common/Helpers.hpp"
-#include "socket/ConnectedSocketParcel.hpp"
+#include "peer/ConnectedSocketParcel.hpp"
 
 namespace 
 {
@@ -78,10 +78,14 @@ namespace BT
         Close();
     }
 
-    std::unique_ptr<IPv4ClientSocket> IPv4ClientSocket::CreateTCPSocket() 
+    std::unique_ptr<IPv4ClientSocket> IPv4ClientSocket::CreateTCPSocket(IClientSocketObserver* observer,
+                                                                        std::string const& ip,
+                                                                        unsigned int const port) 
     {
         std::unique_ptr<IPv4ClientSocket> s { new IPv4ClientSocket() };
         s->sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+        s->Register(observer);
+		s->ConnectToServer(ip, port);
         return s;
     }
 

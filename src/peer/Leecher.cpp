@@ -58,9 +58,7 @@ namespace BT
 		: torrent(t), 
 		  seeder(s) 
 	{
-		clientSocket = IPv4ClientSocket::CreateTCPSocket();
-		clientSocket->Register(this);
-		clientSocket->ConnectToServer(seeder.ip, seeder.port);
+		clientSocket = IPv4ClientSocket::CreateTCPSocket(this, seeder.ip, seeder.port);
 	}
 
 	Leecher::~Leecher()

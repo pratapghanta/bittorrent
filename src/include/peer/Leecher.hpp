@@ -3,23 +3,23 @@
 
 #include <memory>
 
+#include "peer/ClientSocketObservable.hpp"
+#include "peer/ClientSocketObserver.hpp"
 #include "peer/Peer.hpp"
-#include "peer/MessagingSocket.hpp"
-#include "socket/ClientSocketObservable.hpp"
-#include "socket/ClientSocketObserver.hpp"
 #include "torrent/Torrent.hpp"
 
 namespace BT 
 {
 	struct ConnectedSocketParcel;
+	class MessagingSocket;
+
 	class Leecher : public IClientSocketObserver
 	{
 	public:
 		Leecher(BT::Torrent const t, Peer const& seeder);
 		virtual ~Leecher();
 
-		// Callbacks from IClientSocketObserver
-		virtual void OnConnect(ConnectedSocketParcel const&);
+		virtual void OnConnect(ConnectedSocketParcel const&) override;
 
 	private:
 		bool const handshake(MessagingSocket const&);

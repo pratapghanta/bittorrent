@@ -1,13 +1,12 @@
-#include "socket/ClientSocketObservable.hpp"
-
 #include <algorithm>
 
-#include "socket/ClientSocketObserver.hpp"
-#include "socket/ConnectedSocketParcel.hpp"
+#include "peer/ConnectedSocketParcel.hpp"
+#include "peer/ServerSocketObservable.hpp"
+#include "peer/ServerSocketObserver.hpp"
 
 namespace BT 
 {
-    void IClientSocketObservable::Register(IClientSocketObserver* observer)
+    void IServerSocketObservable::Register(IServerSocketObserver* observer)
     {
         auto iterator = std::find(observers.begin(), observers.end(), observer);
         if (iterator == observers.end()) 
@@ -16,7 +15,7 @@ namespace BT
         }
     }
 
-    void IClientSocketObservable::Unregister(IClientSocketObserver* observer)
+    void IServerSocketObservable::Unregister(IServerSocketObserver* observer)
     {
         auto iterator = std::find(observers.begin(), observers.end(), observer);
         if (iterator != observers.end()) 
@@ -25,11 +24,11 @@ namespace BT
         }
     }
 
-    void IClientSocketObservable::OnConnect(ConnectedSocketParcel const& parcel)
+    void IServerSocketObservable::OnAcceptConnection(ConnectedSocketParcel const& parcel)
     {
         for (auto observer : observers)
         {
-            observer->OnConnect(parcel);
+            observer->OnAcceptConnection(parcel);
         }
     }
 }

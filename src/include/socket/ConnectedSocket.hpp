@@ -3,12 +3,13 @@
 
 #include <string>
 
+#include "peer/ConnectedSocket.hpp"
 #include "socket/Socket.hpp"
 
 namespace BT 
 {
     struct ConnectedSocketParcel;
-    class ConnectedSocket : public ISocket
+    class ConnectedSocket : public ISocket, public IConnectedSocket
     {
     private:
         ConnectedSocket() = default;
@@ -21,9 +22,8 @@ namespace BT
         ConnectedSocket& operator=(ConnectedSocket&&);
         virtual ~ConnectedSocket();
 
-        virtual int Send(void const * const, unsigned int) const;
-        virtual int Receive(void*, unsigned int) const;
-
+        virtual unsigned int Send(void const * const, unsigned int);
+        virtual unsigned int Receive(void*, unsigned int);
         virtual void Close();
 
     private:

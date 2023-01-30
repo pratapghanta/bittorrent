@@ -1,14 +1,17 @@
 #if !defined(MESSAGING_SOCKET_HPP)
 #define MESSAGING_SOCKET_HPP
 
+#include <memory>
 #include <string>
 
+#include "peer/ConnectedSocket.hpp"
 #include "peer/MessageParcel.hpp"
-#include "socket/ConnectedSocket.hpp"
 
 namespace BT 
 {
     struct ConnectedSocketParcel;
+	
+	using ConnectedSocketPtr = std::unique_ptr<IConnectedSocket>;
 
 	class MessagingSocket
 	{
@@ -23,8 +26,8 @@ namespace BT
         std::string GetFromId() const { return fromId; }
         std::string GetToId() const { return toId; }
 
-        int Send(char const * const, unsigned int) const;
-        int Receive(char*, unsigned int) const;
+        unsigned int Send(char const * const, unsigned int) const;
+        unsigned int Receive(char*, unsigned int) const;
 
         void SendMessage(MessageParcel const&) const;
         MessageParcel const ReceiveMessage() const;
@@ -32,7 +35,7 @@ namespace BT
 	private:
         std::string fromId;
         std::string toId;
-        ConnectedSocket connectedSocket;
+        ConnectedSocketPtr connectedSocketPtr;
 	};
 }
 

@@ -22,11 +22,11 @@
 #include "common/Defaults.hpp"
 #include "common/Helpers.hpp"
 #include "common/Logger.hpp"
+#include "peer/ConnectedSocketParcel.hpp"
 #include "peer/BinaryFileHandler.hpp"
 #include "peer/MessageParcel.hpp"
 #include "peer/MessageParcelFactory.hpp"
 #include "peer/MessagingSocket.hpp"
-#include "socket/ConnectedSocketParcel.hpp"
 #include "socket/IPv4Socket.hpp"
 
 namespace 
@@ -45,9 +45,7 @@ namespace BT
 				   unsigned int const maxConnections) 
 		: torrent(t)
 	{
-		serverSocket = IPv4ServerSocket::CreateTCPSocket(port, maxConnections);
-		serverSocket->Register(this);
-		serverSocket->AcceptConnection();
+		serverSocket = IPv4ServerSocket::CreateTCPSocket(this, port, maxConnections);
 	}
 
 	Seeder::~Seeder() 
@@ -92,6 +90,65 @@ namespace BT
 		return inSameSwarm() && isExpectedHost();
 	}
 
+	void Seeder::messageLoop(MessagingSocket const& messagingSocket)
+	{
+		auto msg = messagingSocket.ReceiveMessage(); // MessageType::INTERESTED
+		switch(msg.GetType())
+		{
+			case MessageType::CHOKE:
+			{
+				// Not implemented.
+				break;
+			}
+			case MessageType::UNCHOKE:
+			{
+
+			}
+			case MessageType::INTERESTED:
+			{
+				if (msg.IsKeepAlive())
+				{
+
+				}
+				else
+				{
+					messagingSocket.SendMessage(MessageParcelFactory::GetUnChokedMessage());
+				}
+				messageLoop(messagingSocket);
+				break;
+			}
+			case MessageType::NOTINTERESTED:
+			{
+				break;
+			}
+			case MessageType::HAVE:
+			{
+
+			}
+			case MessageType::BITFIELD:
+			{
+
+			}
+			case MessageType::REQUEST:
+			{
+
+			}
+			case MessageType::PIECE:
+			{
+
+			}
+			case MessageType::CANCEL:
+			{
+				// Not implemented.
+			}
+			default:
+			{
+				// throw exception
+				break;
+			}
+		}
+	}
+
 	void Seeder::transfer(MessagingSocket const& messagingSocket) 
 	{
 		if (!handshake(messagingSocket))
@@ -103,8 +160,11 @@ namespace BT
 
 		std::string const avaliablePieces(torrent.numOfPieces, '1');
 		messagingSocket.SendMessage(MessageParcelFactory::GetBitfieldMessage(avaliablePieces));
-
-		auto msg = messagingSocket.ReceiveMessage(); // MessageType::INTERESTED
+		
+		
+		
+		#if 0
+		
 		while (msg.IsInterested()) 
 		{
 			messagingSocket.SendMessage(MessageParcelFactory::GetUnChokedMessage());
@@ -142,5 +202,7 @@ namespace BT
 			msg = messagingSocket.ReceiveMessage(); // MessageType::INTERESTED
 			if (msg.IsKeepAlive()) usleep(1000000);
 		}
+
+		#endif
 	}
 }

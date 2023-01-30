@@ -5,7 +5,7 @@
 
 namespace BT 
 {
-    class IServerSocket
+    class IServerSocket : public ISocket
     {
     public:
         virtual void AcceptConnection() = 0;

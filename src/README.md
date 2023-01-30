@@ -42,3 +42,8 @@ IF the .torrent file is valid torrent file
    Parsed data is printed to stdout
    
 ELSE appropriate message is displayed.
+
+
+Documentation:
+-------
+https://lucid.app/lucidchart/23658d17-f79b-4b29-8b20-4802f412a2c2/edit?beaconFlowId=6ED9F0E9CA307AE0&invitationId=inv_f96cff65-eee1-47be-a64a-926fd159d9b5&page=0_0#

@@ -23,8 +23,8 @@
 #include "common/Defaults.hpp"
 #include "common/Errors.hpp"
 #include "common/Helpers.hpp"
+#include "peer/ConnectedSocketParcel.hpp"
 #include "peer/MessageParcelFactory.hpp"
-#include "socket/ConnectedSocketParcel.hpp"
 
 namespace
 {
@@ -89,12 +89,12 @@ namespace BT
         Close();
     }
 
-    int ConnectedSocket::Send(void const * const buffer, unsigned int count) const
+    unsigned int ConnectedSocket::Send(void const * const buffer, unsigned int count)
     {
         return write(connectedSockfd, buffer, count);
     }
 
-    int ConnectedSocket::Receive(void* buffer, unsigned int count) const
+    unsigned int ConnectedSocket::Receive(void* buffer, unsigned int count)
     {
         memset(buffer, 0, count);
 		
