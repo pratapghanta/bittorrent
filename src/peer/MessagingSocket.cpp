@@ -1,6 +1,8 @@
+#include <cassert>
 #include <cstring>
 #include <functional>
 #include <unordered_map>
+#include <vector>
 
 #include "common/Defaults.hpp"
 #include "common/Errors.hpp"
@@ -25,17 +27,17 @@ namespace BT
 {
 	namespace 
 	{
-		long const receiveLong(ConnectedSocketPtr const& connectedSocketPtr) 
+		template<typename T>
+		void receiveIntegerData(ConnectedSocketPtr const& connectedSocketPtr, T& value) 
 		{
-			long value = 0;
+			value = 0;
 			connectedSocketPtr->Receive((void*)&value, sizeof(value));
-			return value;
 		}
 
-		unsigned long const receiveMessageLength(ConnectedSocketPtr const& connectedSocketPtr) 
+		MessageLength const receiveMessageLength(ConnectedSocketPtr const& connectedSocketPtr) 
 		{
-			unsigned long msgLength = 0;
-			connectedSocketPtr->Receive((void*)&msgLength, sizeof(msgLength));
+			MessageLength msgLength = 0;
+			receiveIntegerData(connectedSocketPtr, msgLength);
 			return msgLength;
 		}
 
@@ -48,7 +50,7 @@ namespace BT
 
 		template<MessageType msgType>
 		MessageParcel const receiveSpecificMessage(ConnectedSocketPtr const&,
-		                                           unsigned long const) 
+		                                           MessageLength const) 
 		{
 			std::unordered_map<MessageType, std::function<MessageParcel const()>> handlers;
 			handlers[MessageType::CHOKE] = MessageParcelFactory::GetChokedMessage;
@@ -67,60 +69,81 @@ namespace BT
 
 		template<>
 		MessageParcel const receiveSpecificMessage<MessageType::HAVE>(ConnectedSocketPtr const& connectedSocketPtr,
-		                                                              unsigned long const) 
+		                                                              MessageLength const) 
 		{
-			long have = receiveLong(connectedSocketPtr);
+			Have have = 0;
+			receiveIntegerData(connectedSocketPtr, have);
 			return MessageParcelFactory::GetHaveMessage(have);
 		}
 
 		template<>
 		MessageParcel const receiveSpecificMessage<MessageType::BITFIELD>(ConnectedSocketPtr const& connectedSocketPtr,
-		                                                                  unsigned long const msgLength) 
+		                                                                  MessageLength const totalMsgLength) 
 		{
-			char buffer[Defaults::MaxBufferSize] = "";
-			connectedSocketPtr->Receive((void*)&buffer, msgLength-1);
-			buffer[msgLength-1] = '\0';
-			return  MessageParcelFactory::GetBitfieldMessage(buffer);
+			if (totalMsgLength <= 1)
+			{
+				throw UnExpectedMessage();
+				// TODO: Abort the peer connection as it may be rogue.
+			}
+
+			auto const bitfieldLength = totalMsgLength-1;
+			std::vector<char> buffer(bitfieldLength+1, '\0');
+			connectedSocketPtr->Receive((void*)&(buffer[0]), bitfieldLength);
+			return  MessageParcelFactory::GetBitfieldMessage(&(buffer[0]));
 		}
 
 		template<>
 		MessageParcel const receiveSpecificMessage<MessageType::REQUEST>(ConnectedSocketPtr const& connectedSocketPtr,
-		                                                                 unsigned long const) 
+		                                                                 MessageLength const) 
 		{
-			RequestParcel request(receiveLong(connectedSocketPtr), 
-			                      receiveLong(connectedSocketPtr), 
-								  receiveLong(connectedSocketPtr));
+			RequestParcel request;
+			receiveIntegerData(connectedSocketPtr, request.index);
+			receiveIntegerData(connectedSocketPtr, request.begin); 
+			receiveIntegerData(connectedSocketPtr, request.length);
 			return  MessageParcelFactory::GetRequestMessage(request);
 		}
 
 		template<>
 		MessageParcel const receiveSpecificMessage<MessageType::PIECE>(ConnectedSocketPtr const& connectedSocketPtr,
-		                                                               unsigned long const) 
+		                                                               MessageLength const totalMsgLength) 
 		{
-			PieceParcel piece(receiveLong(connectedSocketPtr), 
-			                  receiveLong(connectedSocketPtr), nullptr);
-			return  MessageParcelFactory::GetPieceMessage(piece);
+			PieceParcel pieceParcel;
+			
+			receiveIntegerData(connectedSocketPtr, pieceParcel.index);
+			receiveIntegerData(connectedSocketPtr, pieceParcel.begin); 
+			
+			auto const pieceLength = totalMsgLength - 1 - pieceParcel.Size();
+			if (pieceLength > 0)
+			{
+				pieceParcel.piece = new char[pieceLength+1];
+				connectedSocketPtr->Receive((void*)pieceParcel.piece, pieceLength);
+				pieceParcel.piece[pieceLength] = '\0';
+			}
+			
+			return  MessageParcelFactory::GetPieceMessage(pieceParcel);
 		}
 
 		template<>
 		MessageParcel const receiveSpecificMessage<MessageType::CANCEL>(ConnectedSocketPtr const& connectedSocketPtr,
-		                                                                unsigned long const) 
+		                                                                MessageLength const) 
 		{
-			RequestParcel cancel(receiveLong(connectedSocketPtr),
-			                     receiveLong(connectedSocketPtr),
-								 receiveLong(connectedSocketPtr));
+			RequestParcel cancel;
+			receiveIntegerData(connectedSocketPtr, cancel.index);
+			receiveIntegerData(connectedSocketPtr, cancel.begin); 
+			receiveIntegerData(connectedSocketPtr, cancel.length);
 			return  MessageParcelFactory::GetCancelMessage(cancel);
 		}
 
-		void sendLong(ConnectedSocketPtr const& connectedSocketPtr, long const value) 
+		template<typename T>
+		void sendIntegerData(ConnectedSocketPtr const& connectedSocketPtr, T const value) 
 		{
 			connectedSocketPtr->Send((void*)&value, sizeof(value));
 		}
 
 		void sendMessageLength(ConnectedSocketPtr const& connectedSocketPtr, MessageParcel const &msg) 
 		{
-			unsigned long msgLength = msg.GetLength();
-			connectedSocketPtr->Send((void*)&msgLength, sizeof(msgLength));
+			MessageLength msgLength = msg.GetLength();
+			sendIntegerData(connectedSocketPtr, msgLength);
 		}
 
 		void sendMessageType(ConnectedSocketPtr const& connectedSocketPtr, MessageParcel const &msg) 
@@ -171,15 +194,20 @@ namespace BT
 		void sendSpecificMessage<MessageType::HAVE>(ConnectedSocketPtr const& connectedSocketPtr, MessageParcel const &msg) 
 		{
 			sendMessageAttributes(connectedSocketPtr, msg);
-			sendLong(connectedSocketPtr, msg.GetHave());
+			sendIntegerData(connectedSocketPtr, msg.GetHave());
 		}
 
 		template<>
 		void sendSpecificMessage<MessageType::BITFIELD>(ConnectedSocketPtr const& connectedSocketPtr, MessageParcel const &msg) 
 		{
-			sendMessageAttributes(connectedSocketPtr, msg);
-
+			/* bitfield message can be skipped when the peer has NO pieces */
 			auto bitfield = msg.GetBitfield();
+			if (bitfield.find('1') == std::string::npos)
+			{
+				return;
+			}
+
+			sendMessageAttributes(connectedSocketPtr, msg);
 			connectedSocketPtr->Send((void*)bitfield.c_str(), bitfield.length());
 		}
 
@@ -189,9 +217,9 @@ namespace BT
 			sendMessageAttributes(connectedSocketPtr, msg);
 
 			auto request = msg.GetRequest();
-			sendLong(connectedSocketPtr, request.index);
-			sendLong(connectedSocketPtr, request.begin);
-			sendLong(connectedSocketPtr, request.length);
+			sendIntegerData(connectedSocketPtr, request.index);
+			sendIntegerData(connectedSocketPtr, request.begin);
+			sendIntegerData(connectedSocketPtr, request.length);
 		}
 
 		template<>
@@ -199,9 +227,13 @@ namespace BT
 		{
 			sendMessageAttributes(connectedSocketPtr, msg);
 
-			auto piece = msg.GetPiece();
-			sendLong(connectedSocketPtr, piece.index);
-			sendLong(connectedSocketPtr, piece.begin);
+			PieceParcel pieceParcel = msg.GetPiece();
+			sendIntegerData(connectedSocketPtr, pieceParcel.index);
+			sendIntegerData(connectedSocketPtr, pieceParcel.begin);
+			if (pieceParcel.piece != nullptr)
+			{
+				connectedSocketPtr->Send((void*)pieceParcel.piece, strlen(pieceParcel.piece));
+			}
 		}
 
 		template<>
@@ -210,9 +242,9 @@ namespace BT
 			sendMessageAttributes(connectedSocketPtr, msg);
 
 			auto cancel = msg.GetRequest();
-			sendLong(connectedSocketPtr, cancel.index);
-			sendLong(connectedSocketPtr, cancel.begin);
-			sendLong(connectedSocketPtr, cancel.length);
+			sendIntegerData(connectedSocketPtr, cancel.index);
+			sendIntegerData(connectedSocketPtr, cancel.begin);
+			sendIntegerData(connectedSocketPtr, cancel.length);
 		}
 	}
 }
@@ -277,9 +309,13 @@ namespace BT
             handlers[MessageType::CANCEL] = receiveSpecificMessage<MessageType::CANCEL>;
         }
 
-		unsigned long msgLength = receiveMessageLength(connectedSocketPtr);
+		MessageLength msgLength = receiveMessageLength(connectedSocketPtr);
+		if (msgLength == 0)
+		{
+			return MessageParcelFactory::GetKeepAliveMessage();
+		}
+
 		MessageType msgType = receiveMessageType(connectedSocketPtr);
-		
 		auto itr = handlers.find(msgType);
 		if (itr == handlers.end())
 		{

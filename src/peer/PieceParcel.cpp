@@ -1,59 +1,84 @@
 #include <cstring>
+#include <utility>
 
-#include "peer/MessageParcel.hpp"
+#include "peer/PieceParcel.hpp"
 
-BT::PieceParcel::PieceParcel() : index(0), begin(0), piece(nullptr) {}
+namespace BT
+{
+	PieceParcel::PieceParcel() 
+		: index(0), begin(0), piece(nullptr) 
+	{}
 
-BT::PieceParcel::PieceParcel(long const i, long const b, char const * const p) : index(i), begin(b), piece(nullptr) {
-	if (p == nullptr)
-		return;
+	PieceParcel::PieceParcel(uint32_t const i, uint32_t const b, char const * const p) 
+		: index(i), begin(b), piece(nullptr) 
+	{
+		if (p == nullptr)
+		{
+			return;
+		}
 
-	piece = new char[strlen(p)];
-	strcpy(piece, p);
-}
+		piece = new char[strlen(p)];
+		strcpy(piece, p);
+	}
 
-BT::PieceParcel::PieceParcel(BT::PieceParcel const& other) : index(other.index), begin(other.begin), piece(nullptr) {
-	if (other.piece == nullptr)
-		return;
+	PieceParcel::PieceParcel(PieceParcel const& other) 
+		: index(other.index), begin(other.begin), piece(nullptr) 
+	{
+		if (other.piece == nullptr)
+		{
+			return;
+		}
 
-	piece = new char[strlen(other.piece)];
-	strcpy(piece, other.piece);
-}
+		piece = new char[strlen(other.piece)];
+		strcpy(piece, other.piece);
+	}
 
-BT::PieceParcel::PieceParcel(BT::PieceParcel&& other) : index(other.index), begin(other.begin), piece(other.piece) {
-	other.reset();
-}
+	PieceParcel::PieceParcel(PieceParcel&& other) 
+		: index(other.index), begin(other.begin), piece(other.piece) 
+	{
+		other.piece = nullptr;
+	}
 
-BT::PieceParcel& BT::PieceParcel::operator=(BT::PieceParcel other) {
-	BT::swap(*this, other);
-	return *this;
-}
+	PieceParcel& PieceParcel::operator=(PieceParcel other) 
+	{
+		swap(*this, other);
+		return *this;
+	}
 
-void BT::PieceParcel::reset() {
-	index = 0;
-	begin = 0;
-	piece = nullptr;
-}
+	void swap(PieceParcel& a, PieceParcel& b) 
+	{
+		std::swap(a.begin, b.begin);
+		std::swap(a.index, b.index);
+		std::swap(a.piece, b.piece);
+	}
 
-void BT::swap(BT::PieceParcel& a, BT::PieceParcel& b) {
-	std::swap(a.begin, b.begin);
-	std::swap(a.index, b.index);
-	std::swap(a.piece, b.piece);
-}
+	bool operator==(PieceParcel const& a, PieceParcel const& b) 
+	{
+		if (!((a.index == b.index) && (a.begin == b.begin)))
+		{
+			return false;
+		}
 
-bool BT::operator==(BT::PieceParcel const& a, BT::PieceParcel const& b) {
-	if (!((a.index == b.index) && (a.begin == b.begin)))
-		return false;
+		if (a.piece == nullptr)
+		{
+			return (b.piece == nullptr);
+		}
 
-	if (a.piece == nullptr)
-		return (b.piece == nullptr);
-	return std::string(a.piece) == std::string(b.piece);
-}
+		return strcmp(a.piece, b.piece) == 0;
+	}
 
-BT::PieceParcel::~PieceParcel() {
-	if (piece == nullptr)
-		return;
+	PieceParcel::~PieceParcel() 
+	{
+		if (piece != nullptr)
+		{
+			delete[] piece;
+			piece = nullptr;
+		}
+	}
 
-	delete[] piece;
-	piece = nullptr;
+	unsigned int PieceParcel::Size() const
+	{
+		unsigned int pieceLength = (piece == nullptr) ? 0 : strlen(piece);
+		return sizeof(index) + sizeof(begin) + pieceLength; 
+	}
 }

@@ -6,15 +6,15 @@
 
 #include "common/StatusCode.hpp"
 
-namespace BT {
-
+namespace BT 
+{
 	using PieceHashList = std::vector<std::string>;
 	
-	class Torrent {
-	public:
+	struct Torrent 
+	{
 		Torrent() = default;
-		Torrent(/* IN  */ std::string const& filename,
-		        /* OUT */ STATUSCODE& rStatus);
+		Torrent(/* IN  */ std::string const&,
+		        /* OUT */ STATUSCODE&);
 		Torrent(Torrent const&) = default;
 		Torrent& operator=(Torrent const&) = default;
 		Torrent(Torrent&&) = default;
@@ -23,7 +23,6 @@ namespace BT {
 
 		void Reset();
 
-	public:
 		std::string name;
 		std::string filename;
 		unsigned int fileLength;

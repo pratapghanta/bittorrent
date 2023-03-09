@@ -6,12 +6,12 @@
 namespace BT
 {
 	MessageParcel::MessageParcel() 
-		: type{MessageType::END}, length{0ul} {}
+		: length{0}, type{MessageType::END} {}
 
 	MessageParcel::MessageParcel(MessageType const mt, 
-								unsigned long const len, 
-								MessagePayload const& mp)
-		: type{mt}, length{len}, payload{mp} {}
+								 MessageLength const len, 
+								 MessagePayload const& mp)
+		: length{len}, type{mt}, payload{mp} {}
 	
 	void MessageParcel::reset() 
 	{
@@ -27,10 +27,10 @@ namespace BT
 	    return std::get<std::string>(this->payload);
 	}
 
-	long const MessageParcel::GetHave() const 
+	Have const MessageParcel::GetHave() const 
 	{
 		assert(this->IsHave());
-		return std::get<long>(this->payload);
+		return std::get<Have>(this->payload);
 	}
 
 	PieceParcel const MessageParcel::GetPiece() const 

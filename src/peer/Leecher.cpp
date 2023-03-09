@@ -11,6 +11,8 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <openssl/sha.h>
+#include <unordered_map>
+#include <functional>
 
 #include "common/Defaults.hpp"
 #include "common/Helpers.hpp"
@@ -19,10 +21,17 @@
 #include "peer/MessageParcel.hpp"
 #include "peer/MessageParcelFactory.hpp"
 #include "peer/MessagingSocket.hpp"
+#include "peer/PeerState.hpp"
 #include "socket/IPv4Socket.hpp"
 
 namespace 
 {
+	std::string const getDataFilename(std::string const& torrentFilename) 
+	{
+		unsigned int endPos = torrentFilename.rfind(BT::Defaults::TorrentFileExtension);
+		return torrentFilename.substr(0, endPos);
+	}
+
 	std::string const getSaveFilenameForPiece(std::string const& saveFile, long const pieceIndex) 
 	{
 		std::stringstream ss;
@@ -31,10 +40,9 @@ namespace
 		return ss.str();
 	}
 
-	bool const isPieceAvailableAtSeeder(BT::MessageParcel const& msg, long const pieceIndex) 
+	bool const allPiecesAvailableAtSeeder(BT::MessageParcel const& msg, BT::Torrent const& torrent) 
 	{
-		auto piecesInfo = msg.GetBitfield();
-		return piecesInfo[pieceIndex] == '1';
+		return (msg.GetBitfield() == std::string(torrent.numOfPieces, '1'));
 	}
 
 	bool isTransferSuccessful(BT::Torrent const& torrent, long const pieceIndex, std::string const& fileContents)
@@ -75,8 +83,10 @@ namespace BT
 		}
 
 		long interestedPiece = 0;
-		bool const isTransferred = getPieceFromSeeder(messagingSocket, interestedPiece);
-		if (isTransferred)
+		getPieceFromSeeder(messagingSocket, interestedPiece);
+		
+		bool bTransferComplete = true;
+		if (bTransferComplete)
 		{
 			/* Broadcast to all other peers */
 			/* Print to log about the downloaded piece */
@@ -121,16 +131,12 @@ namespace BT
 		return false;
 	}
 
+#if 0
 	bool const Leecher::getPieceFromSeeder(MessagingSocket const& messagingSocket, long const interestedPiece) 
 	{
 		auto msg = messagingSocket.ReceiveMessage(); // MessageType::BITFIELD
 
-		if (!isPieceAvailableAtSeeder(msg, interestedPiece)) 
-		{
-			messagingSocket.SendMessage(MessageParcelFactory::GetNotInterestedMessage());
-			return false;
-		}
-
+		
 		messagingSocket.SendMessage(MessageParcelFactory::GetInterestedMessage());
 		msg = messagingSocket.ReceiveMessage(); // MessageType::UNCHOKE /* Expecting choke/unchoke */
 		if (msg.IsChoked())
@@ -174,5 +180,114 @@ namespace BT
 		fileHndl.Put(fileContents);
 
 		return isTransferSuccessful(torrent, interestedPiece, fileContents);
+
+		return true;
+	}
+#endif
+
+	void Leecher::getPieceFromSeeder(MessagingSocket const& messagingSocket,
+	                                 long const piece)
+	{
+		PeerState state;
+		bool bTransferInProgress = true;
+		MessageParcel msg;
+		uint32_t bytesRequested = torrent.pieceLength;
+		uint32_t bytesTransferred = 0;
+		
+		CBinaryFileHandler fileHndl(getDataFilename(torrent.filename));
+
+		auto OnChokeMessageReceived = [&](){
+			state.bLeecherIsChokingSeeder = true;
+			// Pausing transfer is NOT implemented.
+		};
+
+		auto OnUnchokeMessageReceived = [&](){
+			state.bLeecherIsChokingSeeder = false;
+		};
+
+		auto OnInterestedMessageReceived = [&](){
+			state.bSeederIsInterested = true;
+
+			RequestParcel requestParcel;
+			requestParcel.begin = 0;
+			requestParcel.index = piece;
+			requestParcel.length = torrent.pieceLength;
+			messagingSocket.SendMessage(MessageParcelFactory::GetRequestMessage(requestParcel));
+		};
+
+		auto OnNotInterestedMessageReceived = [&](){
+			state.bSeederIsInterested = false;
+			bTransferInProgress = false;
+		};
+
+		auto OnBitfieldMessageReceived = [&](){
+			if (allPiecesAvailableAtSeeder(msg, torrent)) 
+			{
+				messagingSocket.SendMessage(MessageParcelFactory::GetInterestedMessage());
+				state.bLeecherIsInterested = true;
+			}
+			else
+			{
+				state.bLeecherIsInterested = false;
+				bTransferInProgress = false;
+				messagingSocket.SendMessage(MessageParcelFactory::GetNotInterestedMessage());
+			}
+		};
+
+		auto OnPieceMessageReceived = [&](){
+			uint32_t bytesSaved = 0;
+			PieceParcel pieceParcel = msg.GetPiece();
+			uint32_t pieceOffsetInFile = (pieceParcel.index * torrent.pieceLength) + pieceParcel.begin;
+			
+			fileHndl.Seek(pieceOffsetInFile);
+			while (bytesSaved < bytesRequested &&
+			       pieceOffsetInFile+bytesSaved < torrent.fileLength)
+			{
+				fileHndl.Put(pieceParcel.piece[bytesSaved]);
+				bytesSaved++;
+			}
+			bytesTransferred += bytesSaved;
+		};
+
+		auto OnKeepaliveMessageReceived = [&](){
+			
+		};
+
+		auto NotImplemented = [&](){};
+		auto UnExpected = [&](){};
+
+		static std::unordered_map<MessageType, std::function<void()>> messageHandlers;
+		if (messageHandlers.empty())
+		{
+			messageHandlers[MessageType::CHOKE] = OnChokeMessageReceived;
+			messageHandlers[MessageType::UNCHOKE] = OnUnchokeMessageReceived;
+			messageHandlers[MessageType::INTERESTED] = OnInterestedMessageReceived;
+			messageHandlers[MessageType::NOTINTERESTED] = OnNotInterestedMessageReceived;
+			messageHandlers[MessageType::HAVE] = UnExpected;
+			messageHandlers[MessageType::BITFIELD] = OnBitfieldMessageReceived;
+			messageHandlers[MessageType::REQUEST] = NotImplemented;
+			messageHandlers[MessageType::PIECE] = OnPieceMessageReceived;
+			messageHandlers[MessageType::CANCEL] = NotImplemented;
+		}
+
+		messagingSocket.SendMessage(MessageParcelFactory::GetUnChokedMessage());
+		state.bSeederIsChokingLeecher = false;
+		
+		while (bTransferInProgress)
+		{
+			msg = messagingSocket.ReceiveMessage();
+			if (msg.IsKeepAlive())
+			{
+				OnKeepaliveMessageReceived();
+			}
+			else
+			{
+				auto itr = messageHandlers.find(msg.GetType());
+				if (itr != messageHandlers.end())
+				{
+					itr->second();
+				}
+			}
+		}
 	}
 }

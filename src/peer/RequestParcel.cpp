@@ -8,13 +8,16 @@ namespace BT
           length(0) 
     {}
         
-    RequestParcel::RequestParcel(long const i, long const b, long const l) 
+    RequestParcel::RequestParcel(uint32_t const i, uint32_t const b, uint32_t const l) 
         : index(i), 
           begin(b), 
           length(l) 
     {}
 
-    bool operator==(RequestParcel const& a, RequestParcel const& b) {
-        return (a.index == b.index) && (a.begin == b.begin) && (a.length == b.length);
+    bool operator==(RequestParcel const& a, RequestParcel const& b) 
+    {
+        return (a.index == b.index) && 
+               (a.begin == b.begin) && 
+               (a.length == b.length);
     }
 }

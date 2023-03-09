@@ -10,16 +10,17 @@ namespace BT
 	class CBinaryFileHandler
 	{
 	public:
-		CBinaryFileHandler(std::string const& filename);
+		CBinaryFileHandler(std::string const&);
 		CBinaryFileHandler(CBinaryFileHandler const&) = delete;
 		CBinaryFileHandler& operator=(CBinaryFileHandler const&) = delete;
 		CBinaryFileHandler(CBinaryFileHandler&&) = default;
 		CBinaryFileHandler& operator=(CBinaryFileHandler&&) = default;
 		~CBinaryFileHandler();
 
-		void Seek(unsigned int const pos);
-		std::string const Get();
-		void Put(std::string const& data);
+		void Seek(unsigned int const);
+		void Get(char&);
+		void Get(unsigned int const, char*, unsigned int&);
+		void Put(char const&);
 
 	private:
 		std::fstream mFileHandle;

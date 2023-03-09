@@ -24,7 +24,7 @@ namespace BT
 	private:
 		bool const handshake(MessagingSocket const&);
 		void transfer(MessagingSocket const&);
-		bool const getPieceFromSeeder(MessagingSocket const&, long const);
+		void getPieceFromSeeder(MessagingSocket const&, long const);
 
 		std::unique_ptr<IClientSocketObservable> clientSocket;
 		Torrent torrent;

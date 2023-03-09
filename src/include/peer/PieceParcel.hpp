@@ -1,6 +1,8 @@
 #if !defined(PIECE_PARCEL_HPP)
 #define PIECE_PARCEL_HPP
 
+#include <cstdint>
+
 namespace BT
 {
     /* A message used to transfer data */
@@ -8,21 +10,18 @@ namespace BT
     struct PieceParcel
     {
         PieceParcel();
-        PieceParcel(long const i, long const b, char const * const p);
-        PieceParcel(PieceParcel const& other);
-        PieceParcel(PieceParcel&& other);
-        PieceParcel& operator=(PieceParcel other);
+        PieceParcel(uint32_t const, uint32_t const, char const * const);
+        PieceParcel(PieceParcel const&);
+        PieceParcel(PieceParcel&&);
+        PieceParcel& operator=(PieceParcel);
         ~PieceParcel();
 
-        unsigned int Size() const { return sizeof(index) + sizeof(begin); }
-
-    private:
-        void reset();
+        unsigned int Size() const;
 
     public:
-        long index;       /* this block belongs to which block */
-        long begin;       /* offset of the block within piece  */
-        char* piece;      /* pointer to start of the piece     */
+        uint32_t index;       /* this block belongs to which block */
+        uint32_t begin;       /* offset of the block within piece  */
+        char* piece;         /* pointer to start of the piece     */
     };
 
     void swap(PieceParcel& a, PieceParcel& b);

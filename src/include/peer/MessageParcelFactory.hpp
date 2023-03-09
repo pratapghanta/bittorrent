@@ -15,7 +15,7 @@ namespace BT
         static MessageParcel const GetKeepAliveMessage();
         static MessageParcel const GetBitfieldMessage(std::string const&);
         static MessageParcel const GetPieceMessage(PieceParcel const&);
-        static MessageParcel const GetHaveMessage(long const);
+        static MessageParcel const GetHaveMessage(Have const);
         static MessageParcel const GetRequestMessage(RequestParcel const&);
         static MessageParcel const GetCancelMessage(RequestParcel const&);
     };

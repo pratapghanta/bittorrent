@@ -3,12 +3,17 @@
 
 #include <string>
 #include <variant>
+#include <cstdint>
 
 #include "peer/PieceParcel.hpp"
 #include "peer/RequestParcel.hpp"
 
 namespace BT {
-	
+	/* https://wiki.theory.org/BitTorrentSpecification#Messages */
+
+	using MessageLength = unsigned int;
+	using Have = uint32_t;
+
 	/* Payload structure:                                                */
 	/* bitfield - a message sent by peer to inform which piece it has    */
 	/* have - an update sent after obtaining a piece                     */
@@ -16,12 +21,12 @@ namespace BT {
 	/* request/cancel - message sent to request piece or cancel transfer */
 	using MessagePayload = std::variant<std::monostate,
 					                    std::string,
-					                    long,						
+					                    Have,						
 					                    PieceParcel,				
 					                    RequestParcel>;
 
 	/* The seeder or leecher communicate using the following types of messages.  */
-	enum class MessageType : short 
+	enum class MessageType : uint8_t 
 	{
 		CHOKE = 0,
 		UNCHOKE,
@@ -40,7 +45,7 @@ namespace BT {
 	{
 	public:
 		MessageParcel();
-		MessageParcel(MessageType, unsigned long const, MessagePayload const&);
+		MessageParcel(MessageType, MessageLength const, MessagePayload const&);
 		MessageParcel(MessageParcel const&) = default;
 		MessageParcel& operator=(MessageParcel const&) = default;
 		MessageParcel(MessageParcel&&) = default;
@@ -56,20 +61,20 @@ namespace BT {
 		bool IsRequest() const { return type == MessageType::REQUEST; }
 		bool IsPiece() const { return type == MessageType::PIECE; }
 		bool IsCancel() const { return type == MessageType::CANCEL; }
-		bool IsKeepAlive() const { return length == 0ul; }
+		bool IsKeepAlive() const { return length == 0; }
 
 		MessageType const GetType() const { return type; }
-		unsigned long const GetLength() const { return length; }
+		MessageLength const GetLength() const { return length; }
 		std::string const GetBitfield() const;
-		long const GetHave() const;
+		Have const GetHave() const;
 		PieceParcel const GetPiece() const;
 		RequestParcel const GetRequest() const;
 		RequestParcel const GetCancel() const;
 
 	private:
-		MessageType type;           /* type of bit torrent mesage               */
-		unsigned long length;       /* length of the remaining message          */
+		MessageLength length;       /* length of the remaining message          */
 									/* 0 length message is a keep-alive message */
+		MessageType type;           /* type of bit torrent mesage               */
 		MessagePayload payload;
 
 		void reset();
