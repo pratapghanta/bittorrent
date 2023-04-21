@@ -70,24 +70,24 @@ namespace BT
 		messagingSocket.Send(torrent.infoHash.c_str(), Sha1MdSize);
 		messagingSocket.Send(messagingSocket.GetToId().c_str(), Sha1MdSize);
 
-		char buffer[MaxBufferSize] = "";
-		memset(buffer, 0, MaxBufferSize);
-		messagingSocket.Receive(buffer, HandshakeMessage.length());
-		if (std::string(buffer).compare(HandshakeMessage) != 0)
+		CharBuffer buffer;
+		buffer.fill(0);
+		messagingSocket.Receive(&(buffer[0]), HandshakeMessage.length());
+		if (HandshakeMessage.compare(&(buffer[0])) != 0)
 		{
 			return false;
 		}
 
 		auto inSameSwarm = [&]() {
-			memset(buffer, 0, MaxBufferSize);
-			messagingSocket.Receive(buffer, Sha1MdSize);
-			return torrent.infoHash.compare(buffer) == 0;
+			buffer.fill(0);
+			messagingSocket.Receive(&(buffer[0]), Sha1MdSize);
+			return torrent.infoHash.compare(&(buffer[0])) == 0;
 		};
 
 		auto isExpectedHost = [&]() {
-			memset(buffer, 0, MaxBufferSize);
-			messagingSocket.Receive(buffer, Sha1MdSize);
-			return messagingSocket.GetToId().compare(buffer) == 0;
+			buffer.fill(0);
+			messagingSocket.Receive(&(buffer[0]), Sha1MdSize);
+			return messagingSocket.GetToId().compare(&(buffer[0])) == 0;
 		};
 
 		return inSameSwarm() && isExpectedHost();

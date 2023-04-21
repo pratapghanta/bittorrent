@@ -6,12 +6,8 @@
 #include "common/Defaults.hpp"
 #include "common/Helpers.hpp"
 
-void PrintErrorAndExit(std::string const& errorMsg) {
-	std::cerr << "ERROR: " << errorMsg << std::endl;
-	exit(-1);
-}
-
-std::string const CalculateId(std::string const& ip, unsigned int const& port) {
+std::string const CalculateId(std::string const& ip, unsigned int const& port) 
+{
 	std::ostringstream oss;
 	oss << ip << port;
 

@@ -8,22 +8,22 @@
 
 namespace BT 
 {
-	Torrent::Torrent(/* IN  */ std::string const& torrent,
-	                 /* OUT */ STATUSCODE& rStatus)
+	Torrent::Torrent(std::string const& torrent,
+	                 STATUSCODE& status)
 			: fileLength(0),
 			  numOfPieces(0),
 			  pieceLength(0) 
 	{
-		rStatus = STATUSCODE::SC_SUCCESS;
+		status = STATUSCODE::SC_SUCCESS;
 
-		Metainfo_t mi;
-		rStatus = MinimalTorrentParser_t().Parse(torrent, mi);
-		if (SC_FAILED(rStatus))
+		Metainfo mi;
+		status = MinimalTorrentParser().Parse(torrent, mi);
+		if (SC_FAILED(status))
 		{
 			return;
 		}
 
-		MI_DictPtr_t const infoDict = mi.mData["info"].GetDictPtr();
+		MI_DictPtr const infoDict = mi.mData["info"].GetDictPtr();
 		filename = torrent;
 		name = (*infoDict)["name"].GetString();
 		fileLength = (*infoDict)["length"].GetInt();
@@ -34,7 +34,7 @@ namespace BT
 		std::string const& hashesOfAllPieces = (*infoDict)["pieces"].GetString();
 		if (numOfPieces != (hashesOfAllPieces.length() / BT::Defaults::Sha1MdSize)) 
 		{
-			rStatus = STATUSCODE::SC_FAIL_BAD_TORRENT;
+			status = STATUSCODE::SC_FAIL_BAD_TORRENT;
 			Reset();
 			return;
 		}
@@ -66,7 +66,7 @@ namespace BT
 		os << "    Piece length: " << t.pieceLength << " bytes" << std::endl;
 		os << "    Piece hashes:" << std::endl;
 		for (auto itr = t.pieceHashes.begin(); itr != t.pieceHashes.end(); ++itr)
-			os << "    " << *itr << std::endl;
+			os << "        " << *itr << std::endl;
 
 		return os;
 	}

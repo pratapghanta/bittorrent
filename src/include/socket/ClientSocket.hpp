@@ -3,7 +3,7 @@
 
 #include <string>
 
-#include "Socket/Socket.hpp"
+#include "socket/Socket.hpp"
 
 namespace BT 
 {

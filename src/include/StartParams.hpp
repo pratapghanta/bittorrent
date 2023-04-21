@@ -6,38 +6,26 @@
 #include <unordered_map>
 #include <string>
 #include <functional>
-#include <algorithm>
 
+#include "common/StatusCode.hpp"
 #include "peer/Peer.hpp"
-#include "torrent/Torrent.hpp"
 
 namespace BT 
 {
-	class StartParams 
+	struct StartParams 
 	{
-	public:
-		StartParams(std::vector<std::string> const&);
-		StartParams(StartParams const&) = default;
-		StartParams(StartParams&&) = default;
-		StartParams& operator=(StartParams const&) = default;
-		StartParams& operator=(StartParams&&) = default;
+		StartParams(std::vector<std::string> const&, STATUSCODE&);
 		~StartParams() = default;
 
+		StartParams(StartParams const&) = default;
+		StartParams& operator=(StartParams const&) = default;
+		
+		StartParams(StartParams&&) = default;
+		StartParams& operator=(StartParams&&) = default;
+
 		bool IsSeeder() const;
+		friend std::ostream& operator<<(std::ostream&, StartParams const&);
 
-		friend std::ostream& operator<<(std::ostream&, BT::StartParams const&);
-
-	private:
-		void throwException(std::exception const&) const;
-
-		void initFlagOptionHandlers();
-		void initKeyValueOptionsHandlers();
-		void initOptionHandlers();
-		void parseOptions(std::vector<std::string> const&);
-		bool isFlagOption(std::string const&) const;
-		bool isKeyValueOption(std::string const&) const;
-
-	public:
 		bool helpRequested;
 		bool enableVerbose;
 		unsigned int clientId;
@@ -48,11 +36,17 @@ namespace BT
 		PeersList peers;
 
 	private:
+		void throwException(std::exception const&) const;
+		void initFlagOptionHandlers();
+		void initKeyValueOptionsHandlers();
+		void initOptionHandlers();
+		void parseArgs(std::vector<std::string> const&);
+
 		std::unordered_map<std::string, std::function<void()>> flagOptionHandler;
 		std::unordered_map<std::string, std::function<void(std::string const&)>> keyValueOptionHandler;
 	};
 
-	std::ostream& operator<<(std::ostream& os, BT::StartParams const&);
+	std::ostream& operator<<(std::ostream& os, StartParams const&);
 }
 
 #endif // !defined(START_PARAMS_HPP)

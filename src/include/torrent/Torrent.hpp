@@ -13,13 +13,14 @@ namespace BT
 	struct Torrent 
 	{
 		Torrent() = default;
-		Torrent(/* IN  */ std::string const&,
-		        /* OUT */ STATUSCODE&);
+		Torrent(std::string const&, STATUSCODE&);
+		~Torrent() = default;
+
 		Torrent(Torrent const&) = default;
 		Torrent& operator=(Torrent const&) = default;
+
 		Torrent(Torrent&&) = default;
 		Torrent& operator=(Torrent&&) = default;
-		~Torrent() = default;
 
 		void Reset();
 

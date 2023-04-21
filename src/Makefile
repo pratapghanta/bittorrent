@@ -28,7 +28,7 @@ SRC_LIB          = $(SRC_LIBDIR)/lib$(PROJECT_NAME).a
 SRC_RUN          = $(SRC_BINDIR)/$(PROJECT_NAME)
 
 SRC_INCLUDEFLAGS = -I$(OPENSSL_INCLUDE) -I$(PROJECT_DIR)/include
-SRC_CXXFLAGS     = -Wall -std=c++17 $(SRC_INCLUDEFLAGS)
+SRC_CXXFLAGS     = -Wall -std=c++20 $(SRC_INCLUDEFLAGS)
 SRC_LIBFLAGS     = $(SRC_LIB) -L$(OPENSSL_LIBDIR) -lssl -lcrypto -lpthread
 
 ifeq ("x$(BUILD_CONFIG)", "xdebug")
@@ -40,7 +40,9 @@ SRC_MODULES      = common                   \
                    socket                   \
                    torrent
 
-SRC_FILES        = common/Helpers.cpp                 \
+SRC_FILES        = common/Defaults.cpp                \
+                   common/Errors.cpp                  \
+                   common/Helpers.cpp                 \
 				   common/Logger.cpp                  \
   				   peer/BinaryFileHandler.cpp         \
 				   peer/ClientSocketObservable.cpp    \

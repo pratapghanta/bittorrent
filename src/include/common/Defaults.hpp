@@ -1,16 +1,20 @@
 #if !defined(DEFAULTS_HPP)
 #define DEFAULTS_HPP
 
+#include <array>
+#include <iostream>
 #include <string>
 
-namespace BT {
-	namespace Defaults {
+namespace BT 
+{
+	namespace Defaults 
+	{
 		unsigned int constexpr MaxConnections = 5;
-		unsigned int constexpr MaxBufferSize = 1024+1;
+		unsigned int constexpr MaxBufferSize = 1024;
 		unsigned int constexpr InitPort = 6677;
 		unsigned int constexpr MaxPort = 6699;
 		unsigned int constexpr DefaultPort = 6767;
-		unsigned int constexpr BlockSize = 16 * 1024;
+		unsigned int constexpr BlockSize = 16*1024;
 		unsigned int constexpr Sha1MdSize = 20;
 		std::string const TorrentFileExtension = ".torrent";
 		std::string const DefaultLogFilename = "bt_client.log";
@@ -30,6 +34,10 @@ namespace BT {
 											"  -I id         \t Set the node identifier to id (dflt: random)\n"
 											"  -v            \t verbose, print additional verbose info\n");
 	}
+
+	void printDefaults(std::ostream&);
+
+	using CharBuffer = std::array<char, Defaults::MaxBufferSize>;
 }
 
 #endif // !defined(DEFAULTS_HPP)

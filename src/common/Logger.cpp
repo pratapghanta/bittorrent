@@ -1,12 +1,12 @@
-#include <iostream>
 #include <cstdio>
-#include <map>
+#include <iostream>
+#include <unordered_map>
 
 #include "common/Logger.hpp"
 
 namespace 
 {
-    std::map<BT::LogType, std::string> const importanceStrMap {
+    std::unordered_map<BT::LogType, std::string> const importanceStrMap {
 #if defined(_DEBUG)        
         { BT::LogType::Trace, "Trace" },
 #endif // defined(_DEBUG)        
@@ -29,7 +29,7 @@ namespace
 namespace BT {
     void Log(LogType const type, char const * const pMsgFormat, ...) 
     {
-        static unsigned int constexpr maxLogMessageSize = 1024 + 1;
+        static size_t constexpr maxLogMessageSize = 1024 + 1;
         static thread_local char messageBuffer[maxLogMessageSize] = "";
 
         va_list args;

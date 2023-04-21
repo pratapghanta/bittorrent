@@ -3,8 +3,7 @@
 
 #include <string>
 
-extern void PrintErrorAndExit(std::string const& errorMsg);
 extern std::string const CalculateId(const std::string& ip, const unsigned int& port);
-extern std::string const GetHelpMesssage();
+#define ARRAY_SIZE(a) (sizeof(a) / sizeof(*(a)))
 
 #endif // !defined(HELPERS_HPP)

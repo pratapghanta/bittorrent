@@ -6,12 +6,14 @@
 
 #include "common/Helpers.hpp"
 #include "common/Defaults.hpp"
+#include "common/StatusCode.hpp"
 #include "peer/Leecher.hpp"
 #include "peer/Seeder.hpp"
 
 #include "StartParams.hpp"
 
-namespace {
+namespace 
+{
 	void handleInterruptSignal()
 	{
 		struct sigaction act;
@@ -24,7 +26,7 @@ namespace {
 	std::vector<std::string> getVectorOfStrings(int const argc, char** argv)
 	{
 		std::vector<std::string> data;
-		data.reserve(argc);
+		data.reserve(argc-1);
 		for (int i = 1; i < argc; i++)
 		{
 			data.push_back(std::string(argv[i]));
@@ -32,6 +34,27 @@ namespace {
 		return data;
 	}
 
+	void printStartParams(BT::StartParams const& params, BT::Torrent const& torrent)
+	{
+		if (!params.enableVerbose) 
+		{
+			return;
+		}
+
+		BT::printDefaults(std::cout);
+		std::cout << params << std::endl;
+		std::cout << torrent << std::endl;
+	}
+
+	void printHelpMessage()
+	{
+		std::cout << std::endl;
+		std::cout << BT::Defaults::HelpMessage << std::endl;
+	}
+}
+
+namespace
+{
 	void startAsSeeder(BT::StartParams const& params, BT::Torrent const& torrent)
 	{
 		BT::Seeder s(torrent, params.seederPort, BT::Defaults::MaxConnections);
@@ -46,39 +69,38 @@ namespace {
         }
 		// ensure that all data is transferred as expected
 	}
+
+	void start(BT::StartParams const& params, BT::Torrent const& torrent)
+	{
+		handleInterruptSignal();
+		printStartParams(params, torrent);
+		if(params.IsSeeder()) 
+		{
+			startAsSeeder(params, torrent);
+			return;
+		}
+		startAsLeecher(params, torrent);	
+	}
 }
 
-int main (int argc, char * argv[]) 
+int main(int argc, char* argv[]) 
 {
-	handleInterruptSignal();
-
-	BT::StartParams const params(getVectorOfStrings(argc, argv));
-	if (params.helpRequested) 
+	STATUSCODE status = STATUSCODE::SC_SUCCESS;
+	auto args = getVectorOfStrings(argc, argv);
+	BT::StartParams const params(args, status);
+	if (SC_FAILED(status) || params.helpRequested) 
 	{
-		std::cout << BT::Defaults::HelpMessage << std::endl;
-		return 0;
+		printHelpMessage();
+		return params.helpRequested ? 0 : -1;
 	}
 
-	STATUSCODE status = STATUSCODE::SC_SUCCESS;
 	BT::Torrent torrent(params.torrentFilename, status);
-	if (SC_FAILED(status)) 
+	if (SC_FAILED(status))
 	{
 		return -1;
 	}
 
-	if (params.enableVerbose) 
-	{
-		std::cout << params << std::endl;
-		std::cout << torrent << std::endl;
-	}
-
-	if(params.IsSeeder()) 
-	{
-		startAsSeeder(params, torrent);
-		return 0;
-	}
-
-	startAsLeecher(params, torrent);	
+	start(params, torrent);
 	return 0;
 }
 

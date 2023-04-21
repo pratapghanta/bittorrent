@@ -1,4 +1,5 @@
 #include <iostream>
+#include <array>
 #include <sstream>
 #include <cstring>
 #include <cstdlib>
@@ -99,25 +100,26 @@ namespace BT
 	{
 		using namespace BT::Defaults;
 
-		char buffer[MaxBufferSize] = "";
-		messagingSocket.Receive(buffer, HandshakeMessage.length());
-		if (HandshakeMessage.compare(buffer) != 0)
+		CharBuffer buffer;
+		buffer.fill(0);
+		messagingSocket.Receive(&(buffer[0]), HandshakeMessage.length());
+		if (HandshakeMessage.compare(&(buffer[0])) != 0)
 		{
 			return false;
 		}
 
 		auto inSameSwarm = [&]() 
 		{
-			memset(buffer, 0, MaxBufferSize);
-			messagingSocket.Receive(buffer, Sha1MdSize);
-			return torrent.infoHash.compare(buffer) == 0;
+			buffer.fill(0);
+			messagingSocket.Receive(&(buffer[0]), Sha1MdSize);
+			return torrent.infoHash.compare(&(buffer[0])) == 0;
 		};
 
 		auto expectedSeeder = [&]() 
 		{
-			memset(buffer, 0, MaxBufferSize);
-			messagingSocket.Receive(buffer, Defaults::Sha1MdSize);
-			return messagingSocket.GetFromId().compare(buffer) == 0;
+			buffer.fill(0);
+			messagingSocket.Receive(&(buffer[0]), Defaults::Sha1MdSize);
+			return messagingSocket.GetFromId().compare(&(buffer[0])) == 0;
 		};
 
 		if (inSameSwarm() && expectedSeeder())

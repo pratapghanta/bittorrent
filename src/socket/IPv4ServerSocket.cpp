@@ -16,6 +16,7 @@
 #include <openssl/sha.h>
 
 #include "common/Defaults.hpp"
+#include "common/Errors.hpp"
 #include "common/Helpers.hpp"
 #include "peer/ConnectedSocketParcel.hpp"
 
@@ -39,7 +40,7 @@ namespace
         memset((void*) &sin, 0, sizeof(sin));
         if (getsockname(sockfd, (sockaddr*) &sin, &len) == -1) 
         {
-            PrintErrorAndExit("Unable to determine IP address associated with the socket.");            
+            BT::FatalError("Unable to determine IP address associated with the socket.");            
         }
 
         return getIPv4AddrFromSockaddr(sin);
@@ -55,7 +56,7 @@ namespace
 
         if (::bind(sockfd, (sockaddr*) &sin, sizeof(sin)) != 0) 
         {
-            PrintErrorAndExit("Socket binding failed.");
+            BT::FatalError("Socket binding failed.");
         }
     }
 }
@@ -134,7 +135,7 @@ namespace BT
             int connectedSockfd = accept(listenSockfd, (sockaddr *) &client_addr, &clilen);
             if (connectedSockfd == Defaults::BadFD)
             {
-                PrintErrorAndExit("Unable to accept a connection.");
+                BT::FatalError("Unable to accept a connection.");
             }
         
             ConnectedSocketParcel parcel;

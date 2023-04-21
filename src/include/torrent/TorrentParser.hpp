@@ -5,15 +5,13 @@
 
 namespace BT 
 {
-    class Metainfo_t;
+    class Metainfo;
 
-    /* Implementation for this project is done only to support       */
-    /* parsing of basic fields in .torrent file.                     */
     class ITorrentParser 
     {
     public:
         virtual STATUSCODE Parse(/* IN */  std::string const& fileName,
-                                 /* OUT */ Metainfo_t& rInfo) const = 0;
+                                 /* OUT */ Metainfo& rInfo) const = 0;
     };
 }
 

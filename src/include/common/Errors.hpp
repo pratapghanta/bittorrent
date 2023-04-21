@@ -1,17 +1,17 @@
-#if !defined(ERRORS_HPP)
-#define ERRORS_HPP
+#if !defined(EXCEPTION_HPP)
+#define EXCEPTION_HPP
 
 #include <exception>
 #include <string>
 
 namespace BT
 {
-    struct CException : std::exception 
+    struct CException : public std::exception 
     {
         CException(std::string const& descStr,
                     std::string const& helpStr) 
             : errorMsg("Exception: " + descStr + "\n" +
-                       "    Help:  " + helpStr)
+                       "     Help: " + helpStr)
         {}
 
         CException(std::string const& descStr) 
@@ -26,6 +26,8 @@ namespace BT
         private:
             std::string errorMsg;
     };
+
+    extern void FatalError(std::string const& errorMsg);
 }
 
-#endif // !defined(ERRORS_HPP)
+#endif // !defined(EXCEPTION_HPP)

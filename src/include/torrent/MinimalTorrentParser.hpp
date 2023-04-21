@@ -7,37 +7,39 @@
 #include "torrent/Metainfo.hpp"
 #include "torrent/TorrentParser.hpp"
 
-namespace BT {
-    class MinimalTorrentParser_t : public ITorrentParser {
+namespace BT 
+{
+    class MinimalTorrentParser : public ITorrentParser 
+    {
     public:
-        MinimalTorrentParser_t();
-        ~MinimalTorrentParser_t() = default;
+        MinimalTorrentParser();
+        ~MinimalTorrentParser() = default;
 
-        MinimalTorrentParser_t(/* IN */ const MinimalTorrentParser_t&) = delete;
-        MinimalTorrentParser_t& operator=(/* IN */ const MinimalTorrentParser_t&) = delete;
+        MinimalTorrentParser(const MinimalTorrentParser&) = delete;
+        MinimalTorrentParser& operator=(const MinimalTorrentParser&) = delete;
 
-        MinimalTorrentParser_t(/* IN */ MinimalTorrentParser_t&&);
-        MinimalTorrentParser_t& operator=(/* IN */ MinimalTorrentParser_t&&);
+        MinimalTorrentParser(MinimalTorrentParser&&);
+        MinimalTorrentParser& operator=(MinimalTorrentParser&&);
 
-        STATUSCODE Parse(/* IN  */ std::string const& fileName,
-                         /* OUT */ Metainfo_t& rInfo) const override;
+        STATUSCODE Parse(std::string const& fileName,
+                         Metainfo& rInfo) const override;
 
     private:
         void reset();
     
-        STATUSCODE openFile(/* IN */ std::string const& strFileName) const;
-        STATUSCODE computeInfoDictHash(/* OUT */ std::string& rHash) const;
+        STATUSCODE openFile(std::string const& strFileName) const;
+        STATUSCODE computeInfoDictHash(std::string& rHash) const;
 
-        STATUSCODE extractChar(/* OUT */ char& ch) const;
-        STATUSCODE extractLong(/* IN  */ char const delim,
-                               /* OUT */ long& rOut) const;
+        STATUSCODE extractChar(char& ch) const;
+        STATUSCODE extractLong(char const delim,
+                               long& rOut) const;
 
-        MI_Object_t extract_MI_Int() const;
-        MI_Object_t extract_MI_String() const;
-        MI_Object_t extract_MI_List() const;
-        MI_Object_t extract_MI_Dict() const;
+        MI_Object extract_MI_Int() const;
+        MI_Object extract_MI_String() const;
+        MI_Object extract_MI_List() const;
+        MI_Object extract_MI_Dict() const;
 
-        MI_Object_t extractData(/* IN */ char ch) const;
+        MI_Object extractData(char ch) const;
         
         mutable std::ifstream mIfstream;
         mutable bool mInfoDict;

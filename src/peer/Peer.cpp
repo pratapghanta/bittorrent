@@ -1,5 +1,3 @@
-#include <iostream>
-
 #include "peer/Peer.hpp"
 
 namespace BT

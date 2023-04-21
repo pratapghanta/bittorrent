@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <iostream>
 
 namespace BT 
 {
@@ -21,14 +22,14 @@ namespace BT
 		Peer& operator=(Peer&&) = default; 
 		~Peer() = default;
 
-		friend std::ostream& operator<<(std::ostream& os, BT::Peer const&);
+		friend std::ostream& operator<<(std::ostream& os, Peer const&);
 
 	public:
 		std::string ip;
 		unsigned int port;
 	};
 
-	std::ostream& operator<<(std::ostream& os, BT::Peer const&);
+	std::ostream& operator<<(std::ostream& os, Peer const&);
 }
 
 #endif // !defined(PEER_HPP)
