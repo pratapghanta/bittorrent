@@ -100,8 +100,7 @@ namespace BT
 	{
 		using namespace BT::Defaults;
 
-		CharBuffer buffer;
-		buffer.fill(0);
+		CharBuffer buffer {};
 		messagingSocket.Receive(&(buffer[0]), HandshakeMessage.length());
 		if (HandshakeMessage.compare(&(buffer[0])) != 0)
 		{

@@ -16,7 +16,7 @@ namespace BT
     class IPv4ServerSocket : public IServerSocket, public IServerSocketObservable
     {
     private:
-        IPv4ServerSocket();
+        IPv4ServerSocket(int const, unsigned int const, unsigned int const);
 
     public:
         static std::unique_ptr<IPv4ServerSocket> CreateTCPSocket(IServerSocketObserver*,
@@ -34,9 +34,8 @@ namespace BT
 
     private:
         int listenSockfd;
-        std::string ip;
         unsigned int listenPort;
-        unsigned int maxConnections;
+        unsigned int backlog;
     };
 
     class IPv4ClientSocket : public IClientSocket, public IClientSocketObservable
@@ -56,7 +55,7 @@ namespace BT
         virtual ~IPv4ClientSocket();
 
         virtual void Close();
-        virtual void ConnectToServer(std::string const& ip, unsigned int port);
+        virtual void ConnectToServer(std::string const& ip, unsigned int const port);
 
     private:
         int sockfd;

@@ -48,9 +48,7 @@ namespace
 namespace BT 
 {
     ConnectedSocket::ConnectedSocket(ConnectedSocketParcel const& parcel)
-        : fromIp(parcel.fromIp),
-          fromPort(parcel.fromPort),
-          toIp(parcel.toIp),
+        : toIp(parcel.toIp),
           toPort(parcel.toPort),
           connectedSockfd(dup(parcel.connectedSockfd))
     {
@@ -58,9 +56,7 @@ namespace BT
     }
 
     ConnectedSocket::ConnectedSocket(ConnectedSocket&& other)
-        : fromIp(other.fromIp),
-          fromPort(other.fromPort),
-          toIp(other.toIp),
+        : toIp(other.toIp),
           toPort(other.toPort),
           connectedSockfd(other.connectedSockfd)
     {
@@ -74,8 +70,6 @@ namespace BT
             return *this;
         }
 
-        fromIp = other.fromIp;
-        fromPort = other.fromPort;
         toIp = other.toIp;
         toPort = other.toPort;
         connectedSockfd = other.connectedSockfd;

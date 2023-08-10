@@ -27,8 +27,6 @@ namespace BT
         virtual void Close();
 
     private:
-        std::string fromIp;
-        unsigned int fromPort;
         std::string toIp;
         unsigned int toPort;
         unsigned int connectedSockfd;

@@ -7,11 +7,18 @@ namespace BT
 {
     struct ConnectedSocketParcel
     {
-        std::string fromIp;
-        unsigned int fromPort;
+        int connectedSockfd;
         std::string toIp;
         unsigned int toPort;
-        int connectedSockfd;
+        
+        ConnectedSocketParcel(int const sockfd, 
+                              std::string const& ip, 
+                              unsigned int const port)
+            : connectedSockfd(sockfd),
+              toIp(ip),
+              toPort(port)
+        {
+        }
     };
 }
 

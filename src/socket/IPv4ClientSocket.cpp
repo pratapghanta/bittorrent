@@ -1,6 +1,7 @@
 #include "socket/IPv4Socket.hpp"
 
 #include <iostream>
+#include <errno.h>
 #include <fstream>
 #include <cstring>
 #include <thread>
@@ -18,7 +19,10 @@
 #include "common/Defaults.hpp"
 #include "common/Errors.hpp"
 #include "common/Helpers.hpp"
+#include "common/Logger.hpp"
 #include "peer/ConnectedSocketParcel.hpp"
+
+extern int errno;
 
 namespace 
 {
@@ -27,27 +31,6 @@ namespace
         char ip[INET_ADDRSTRLEN] = "";
         inet_ntop(addr.sin_family, (void*) &addr.sin_addr, ip, INET_ADDRSTRLEN);
         return ip;
-    }
-
-    void getIPAndPortFromSocket(/* IN */  int const sockfd,
-                                /* OUT */ std::string& ip,
-                                /* OUT */ unsigned int& port) 
-    {
-        if (sockfd == BT::Defaults::BadFD) 
-        {
-            return;
-        }
-
-        sockaddr_in sin;        
-        socklen_t len = sizeof(sockaddr_in);
-        memset((void*) &sin, 0, sizeof(sin));
-        if (getsockname(sockfd, (sockaddr*) &sin, &len) == -1) 
-        {
-            BT::FatalError("Unable to determine IP address associated with the socket.");            
-        }
-
-        ip = getIPv4AddrFromSockaddr(sin);
-        port = ntohs(sin.sin_port);
     }
 }
 
@@ -68,6 +51,7 @@ namespace BT
         {
             return *this;
         }
+			FatalError("Unable to connect to server.");
 
         sockfd = other.sockfd;
         other.sockfd = BT::Defaults::BadFD;
@@ -76,6 +60,7 @@ namespace BT
 
     IPv4ClientSocket::~IPv4ClientSocket() 
     {
+			FatalError("Unable to connect to server.");
         Close();
     }
 
@@ -83,8 +68,16 @@ namespace BT
                                                                         std::string const& ip,
                                                                         unsigned int const port) 
     {
+        Trace("Create IPv4 TCP stream socket.");
+        int sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+        if (sockfd < 0)
+        {
+            Error("Unable to create client socket. errno=%d %s", errno, strerror(errno));
+            return nullptr;
+        }
+
         std::unique_ptr<IPv4ClientSocket> s { new IPv4ClientSocket() };
-        s->sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+        s->sockfd = sockfd;
         s->Register(observer);
 		s->ConnectToServer(ip, port);
         return s;
@@ -99,7 +92,7 @@ namespace BT
         sockfd = BT::Defaults::BadFD;
     }
 
-    void IPv4ClientSocket::ConnectToServer(std::string const& ip, unsigned int port)
+    void IPv4ClientSocket::ConnectToServer(std::string const& ip, unsigned int const port)
     {
         sockaddr_in serv_addr;
 		memset((void *)&serv_addr, 0, sizeof(serv_addr));
@@ -107,17 +100,14 @@ namespace BT
 		serv_addr.sin_addr.s_addr = inet_addr(ip.c_str());
 		serv_addr.sin_port = htons(port);
 
-		if (connect(sockfd, (sockaddr*)&serv_addr, sizeof(serv_addr)) != 0)
+        int status = connect(sockfd, (sockaddr*)&serv_addr, sizeof(serv_addr));
+		if (status < 0)
 		{
-			FatalError("Unable to connect to server.");
+            Error("Unable to connect to server. errno=%d %s", errno, strerror(errno));
+            return;
 		}
 
-        ConnectedSocketParcel parcel;
-        getIPAndPortFromSocket(sockfd, parcel.fromIp, parcel.fromPort);
-        parcel.toIp = ip;
-        parcel.toPort = port;
-        parcel.connectedSockfd = sockfd;
-        sockfd = BT::Defaults::BadFD;
+        ConnectedSocketParcel parcel (sockfd, ip, port);
         OnConnect(parcel);
     }
 }

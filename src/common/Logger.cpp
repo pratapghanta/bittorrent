@@ -22,7 +22,7 @@ namespace
             std::cerr << importanceStrMap.at(type) << ":\t" << messageBuffer << std::endl;
             return;
         }
-        std::cout << importanceStrMap.at(type) << messageBuffer << std::endl;
+        std::cout << importanceStrMap.at(type) << ":\t" << messageBuffer << std::endl;
     }
 }
 

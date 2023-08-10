@@ -1,6 +1,7 @@
 #if !defined(TORRENT_HPP)
 #define TORRENT_HPP
 
+#include <iostream>
 #include <vector>
 #include <string>
 
@@ -9,10 +10,12 @@
 namespace BT 
 {
 	using PieceHashList = std::vector<std::string>;
-	
+
+	class Metainfo;	
 	struct Torrent 
 	{
-		Torrent() = default;
+	public:
+		Torrent();
 		Torrent(std::string const&, STATUSCODE&);
 		~Torrent() = default;
 
@@ -24,6 +27,10 @@ namespace BT
 
 		void Reset();
 
+	private:
+		STATUSCODE extractTorrentDetails(Metainfo&);
+
+	public:
 		std::string name;
 		std::string filename;
 		unsigned int fileLength;

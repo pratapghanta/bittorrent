@@ -1,5 +1,7 @@
+#include <array>
 #include <functional>
 #include <openssl/sha.h>
+#include <string>
 
 #include "common/Defaults.hpp"
 #include "common/Helpers.hpp"
@@ -18,12 +20,17 @@ namespace
     static char constexpr BC_END_VALUE = 'e';
 
 
-    std::string getSHA1Hash(/* IN */ char const * const buffer) 
+    std::string getSHA1Hash(char const * const buffer, size_t bufLen) 
     {
-        char hashValue[BT::Defaults::Sha1MdSize+1] = "";
-        SHA1((unsigned char *)buffer, std::string(buffer).length(), (unsigned char *)hashValue);
+        if (buffer == nullptr)
+        {
+            return "";
+        }
+
+        std::array<unsigned char, BT::Defaults::Sha1MdSize+1> hashValue {};
+        SHA1((unsigned char *)buffer, std::string(buffer).length(), &(hashValue[0]));
         hashValue[BT::Defaults::Sha1MdSize] = '\0';
-        return std::string(hashValue);
+        return std::string((char*)&(hashValue[0]));
     }
 }
 
@@ -134,12 +141,11 @@ namespace BT
             return STATUSCODE::SC_FAIL_UNKNOWN;
         }
 
-        CharBuffer buffer;
-        buffer.fill(0);
-
+        CharBuffer buffer {};
         mIfstream.seekg(mStartInfoDict);
         mIfstream.read(&(buffer[0]), mEndInfoDict - mStartInfoDict + 1);
-        dictHash = getSHA1Hash(&(buffer[0]));
+        buffer[mIfstream.gcount()] = '\0';
+        dictHash = getSHA1Hash(&(buffer[0]), mIfstream.gcount());
 
         return STATUSCODE::SC_SUCCESS;
     }
@@ -170,8 +176,7 @@ namespace BT
             return STATUSCODE::SC_FAIL_BAD_TORRENT;
         }
 
-        CharBuffer buffer;
-        buffer.fill(0);
+        CharBuffer buffer {};
         mIfstream.get(&(buffer[0]), BT::Defaults::MaxBufferSize, delim);
         value = std::stol(&(buffer[0]));
 

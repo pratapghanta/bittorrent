@@ -21,25 +21,24 @@ namespace BT
         MinimalTorrentParser(MinimalTorrentParser&&);
         MinimalTorrentParser& operator=(MinimalTorrentParser&&);
 
-        STATUSCODE Parse(std::string const& fileName,
-                         Metainfo& rInfo) const override;
+        STATUSCODE Parse(std::string const&,
+                         Metainfo&) const override;
 
     private:
         void reset();
     
-        STATUSCODE openFile(std::string const& strFileName) const;
-        STATUSCODE computeInfoDictHash(std::string& rHash) const;
+        STATUSCODE openFile(std::string const&) const;
+        STATUSCODE computeInfoDictHash(std::string&) const;
 
-        STATUSCODE extractChar(char& ch) const;
-        STATUSCODE extractLong(char const delim,
-                               long& rOut) const;
+        STATUSCODE extractChar(char&) const;
+        STATUSCODE extractLong(char const, long&) const;
 
         MI_Object extract_MI_Int() const;
         MI_Object extract_MI_String() const;
         MI_Object extract_MI_List() const;
         MI_Object extract_MI_Dict() const;
 
-        MI_Object extractData(char ch) const;
+        MI_Object extractData(char) const;
         
         mutable std::ifstream mIfstream;
         mutable bool mInfoDict;

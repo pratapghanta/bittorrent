@@ -53,12 +53,16 @@ namespace BT
 
 	Seeder::~Seeder() 
 	{
-		serverSocket->Unregister(this);
+		if (serverSocket != nullptr)
+		{
+			serverSocket->Unregister(this);
+		}
 	}
 
 	void Seeder::OnAcceptConnection(ConnectedSocketParcel const& parcel)
 	{
-		MessagingSocket messagingSocket (parcel);
+		Trace("Accepted connection: (Server) [sockfd: %d] <==> %s:%u (client).", parcel.connectedSockfd, parcel.toIp, parcel.toPort);
+		MessagingSocket messagingSocket(parcel);
 		transfer(messagingSocket); // TODO: Start a thread for n-n communication
 	}
 
@@ -70,8 +74,7 @@ namespace BT
 		messagingSocket.Send(torrent.infoHash.c_str(), Sha1MdSize);
 		messagingSocket.Send(messagingSocket.GetToId().c_str(), Sha1MdSize);
 
-		CharBuffer buffer;
-		buffer.fill(0);
+		CharBuffer buffer {};
 		messagingSocket.Receive(&(buffer[0]), HandshakeMessage.length());
 		if (HandshakeMessage.compare(&(buffer[0])) != 0)
 		{

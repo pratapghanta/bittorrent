@@ -23,6 +23,7 @@ namespace
 		sigaction(SIGPIPE, &act, NULL);
 	}
 
+
 	std::vector<std::string> getVectorOfStrings(int const argc, char** argv)
 	{
 		std::vector<std::string> data;
@@ -33,6 +34,7 @@ namespace
 		}
 		return data;
 	}
+
 
 	void printStartParams(BT::StartParams const& params, BT::Torrent const& torrent)
 	{
@@ -45,6 +47,7 @@ namespace
 		std::cout << params << std::endl;
 		std::cout << torrent << std::endl;
 	}
+
 
 	void printHelpMessage()
 	{
@@ -60,6 +63,7 @@ namespace
 		BT::Seeder s(torrent, params.seederPort, BT::Defaults::MaxConnections);
 	}
 
+
 	void startAsLeecher(BT::StartParams const& params, BT::Torrent const& torrent)
 	{
 		for (auto& seeder : params.peers) 
@@ -69,6 +73,7 @@ namespace
         }
 		// ensure that all data is transferred as expected
 	}
+
 
 	void start(BT::StartParams const& params, BT::Torrent const& torrent)
 	{

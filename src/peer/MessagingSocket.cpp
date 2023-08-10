@@ -12,6 +12,7 @@
 #include "peer/MessageParcel.hpp"
 #include "peer/MessageParcelFactory.hpp"
 #include "peer/MessagingSocket.hpp"
+#include "socket/ConnectedSocket.hpp"
 
 namespace 
 {
@@ -254,8 +255,9 @@ namespace BT
     MessagingSocket::MessagingSocket(ConnectedSocketParcel const& parcel)
         : connectedSocketPtr(nullptr) // xpragha
     {
-        fromId = CalculateId(parcel.fromIp, parcel.fromPort);
+        fromId = ""; // TODO: CalculateId(parcel.fromIp, parcel.fromPort);
         toId = CalculateId(parcel.toIp, parcel.toPort);
+		connectedSocketPtr = std::make_unique<ConnectedSocket>(parcel);
     }
 
     unsigned int MessagingSocket::Send(char const * const buffer, unsigned int count) const

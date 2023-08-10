@@ -8,6 +8,11 @@ namespace BT
 {
     void IServerSocketObservable::Register(IServerSocketObserver* observer)
     {
+        if (observer == nullptr)
+        {
+            return;
+        }
+
         auto iterator = std::find(observers.begin(), observers.end(), observer);
         if (iterator == observers.end()) 
         {
@@ -17,6 +22,11 @@ namespace BT
 
     void IServerSocketObservable::Unregister(IServerSocketObserver* observer)
     {
+        if (observer == nullptr)
+        {
+            return;
+        }
+        
         auto iterator = std::find(observers.begin(), observers.end(), observer);
         if (iterator != observers.end()) 
         {

@@ -3,6 +3,7 @@
 #include <iostream>
 #include <fstream>
 #include <cstring>
+#include <errno.h>
 #include <thread>
 #include <unistd.h>
 #include <netinet/in.h>
@@ -18,7 +19,10 @@
 #include "common/Defaults.hpp"
 #include "common/Errors.hpp"
 #include "common/Helpers.hpp"
+#include "common/Logger.hpp"
 #include "peer/ConnectedSocketParcel.hpp"
+
+extern int errno;
 
 namespace 
 {
@@ -29,24 +33,7 @@ namespace
         return ip;
     }
 
-    std::string getIPv4AddrFromSocket(int const sockfd) 
-    {
-        if (sockfd == BT::Defaults::BadFD) {
-            return "";
-        }
-
-        sockaddr_in sin;        
-        socklen_t len = sizeof(sockaddr_in);
-        memset((void*) &sin, 0, sizeof(sin));
-        if (getsockname(sockfd, (sockaddr*) &sin, &len) == -1) 
-        {
-            BT::FatalError("Unable to determine IP address associated with the socket.");            
-        }
-
-        return getIPv4AddrFromSockaddr(sin);
-    }
-
-    void bindIPv4Socket(int const sockfd, unsigned int const port) 
+    int bindIPv4Socket(int const sockfd, unsigned int const port)
     {
         sockaddr_in sin;
         memset((void*) &sin, 0, sizeof(sin));
@@ -54,24 +41,36 @@ namespace
         sin.sin_addr.s_addr = htonl(INADDR_ANY);
         sin.sin_port = htons(port);
 
-        if (::bind(sockfd, (sockaddr*) &sin, sizeof(sin)) != 0) 
-        {
-            BT::FatalError("Socket binding failed.");
-        }
+        return ::bind(sockfd, (sockaddr*) &sin, sizeof(sin));
+    }
+
+    void setSocketOptions(int const sockfd)
+    {
+        // Set the "LINGER" timeout to zero, to close the listen socket
+        // immediately at program termination.
+        //
+        constexpr int LINGER_ACTIVE = 1;
+        constexpr int LINGER_TIMEOUT = 0;
+        struct linger linger_opt = { LINGER_ACTIVE, LINGER_TIMEOUT };
+        setsockopt(sockfd, SOL_SOCKET, SO_LINGER, &linger_opt, sizeof(linger_opt));
     }
 }
 
 namespace BT 
 {
-    IPv4ServerSocket::IPv4ServerSocket()
-        : listenSockfd(BT::Defaults::BadFD),
-          listenPort(0),
-          maxConnections(0) {}
+    IPv4ServerSocket::IPv4ServerSocket(int const sockfd,
+                                       unsigned int const port,
+                                       unsigned int const maxConnections)
+        : listenSockfd(sockfd),
+          listenPort(port),
+          backlog(maxConnections) 
+    {
+    }
 
     IPv4ServerSocket::IPv4ServerSocket(IPv4ServerSocket&& other)
         : listenSockfd(other.listenSockfd),
           listenPort(other.listenPort),
-          maxConnections(other.maxConnections) 
+          backlog(other.backlog) 
     {
         other.listenSockfd = BT::Defaults::BadFD;
     }
@@ -85,7 +84,7 @@ namespace BT
 
         listenSockfd = other.listenSockfd;
         listenPort = other.listenPort;
-        maxConnections = other.maxConnections;
+        backlog = other.backlog;
 
         other.listenSockfd = BT::Defaults::BadFD;
         return *this;
@@ -100,19 +99,35 @@ namespace BT
                                                                         unsigned int const port, 
                                                                         unsigned int maxConnections) 
     {
-        std::unique_ptr<IPv4ServerSocket> s { new IPv4ServerSocket() };
-        
-        s->Register(observer);
+        Trace("Create IPv4 TCP stream socket.");
+        int listenSockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+        if (listenSockfd < 0)
+        {
+            Error("Unable to create server socket. errno=%d %s", errno, strerror(errno));
+            return nullptr;
+        }
 
-        s->listenSockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-        s->ip = getIPv4AddrFromSocket(s->listenSockfd);
-        s->listenPort = port;
-        s->maxConnections = maxConnections;
+        Trace("Bind: sockfd: %d\tport: %u", listenSockfd, port);
+        int status = bindIPv4Socket(listenSockfd, port);
+        if (status < 0)
+        {
+            Error("Unable to bind server socket %d to port %u. errno=%d %s", listenSockfd, port, errno, strerror(errno));
+            return nullptr;
+        }
 
-        bindIPv4Socket(s->listenSockfd, s->listenPort);
-        listen(s->listenSockfd, maxConnections);
+        setSocketOptions(listenSockfd);
+
+        Trace("Listen: sockfd: %d\tbacklog: %u", listenSockfd, maxConnections);
+        status = listen(listenSockfd, maxConnections);
+        if (status < 0)
+        {
+            Error("Unable to listen on server socket %d. errno=%d %s", listenSockfd, errno, strerror(errno));
+            return nullptr;
+        }
+
+        std::unique_ptr<IPv4ServerSocket> s { new IPv4ServerSocket(listenSockfd, port, maxConnections) };
+        s->Register(observer);   
         s->AcceptConnection();
-
         return s;
     }
 
@@ -121,32 +136,28 @@ namespace BT
         if (listenSockfd > 0) 
         {
             close(listenSockfd);
+            listenSockfd = BT::Defaults::BadFD;
         }
-        listenSockfd = BT::Defaults::BadFD;
     }
 
     void IPv4ServerSocket::AcceptConnection() 
     {
-        unsigned int connections = 0;
-        while (connections < maxConnections)
+        // TODO: 
+        // Loop to accept multiple connections.
+        // Ensure that the loop can be terminated.
+        //
+        sockaddr_in client_addr;
+        socklen_t clilen = sizeof(client_addr);
+        Trace("Block for Accept: sockfd: %d", listenSockfd);
+        int connectedSockfd = accept(listenSockfd, (sockaddr *) &client_addr, &clilen);
+        if (connectedSockfd == Defaults::BadFD)
         {
-            sockaddr_in client_addr;
-            socklen_t clilen = sizeof(client_addr);
-            int connectedSockfd = accept(listenSockfd, (sockaddr *) &client_addr, &clilen);
-            if (connectedSockfd == Defaults::BadFD)
-            {
-                BT::FatalError("Unable to accept a connection.");
-            }
-        
-            ConnectedSocketParcel parcel;
-            parcel.fromIp = ip;
-            parcel.fromPort = listenPort;
-            parcel.toIp = getIPv4AddrFromSockaddr(client_addr);
-            parcel.toPort = ntohs(client_addr.sin_port);
-            parcel.connectedSockfd = connectedSockfd;
-            OnAcceptConnection(parcel);
-
-            connections++;    
+            BT::FatalError("Unable to accept a connection.");
         }
+    
+        ConnectedSocketParcel parcel(connectedSockfd,
+                                     getIPv4AddrFromSockaddr(client_addr),
+                                     ntohs(client_addr.sin_port));
+        OnAcceptConnection(parcel);
     }
 }

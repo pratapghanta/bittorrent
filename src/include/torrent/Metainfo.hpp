@@ -9,7 +9,7 @@
 
 namespace BT 
 {
-    /* TODO: Better name for MI_Object_t */
+    /* TODO: Better name for MI_Object */
     class MI_Object;
 
     using MI_Int = long;
